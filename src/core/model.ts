@@ -63,7 +63,9 @@ export function emptyState(): State {
 }
 
 export function newId(): string {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  const c = (globalThis as { crypto?: Crypto }).crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
 export function customerOf(state: State, project: Project): Customer | undefined {

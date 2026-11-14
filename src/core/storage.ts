@@ -1,9 +1,11 @@
 import { emptyState, DEFAULT_SETTINGS, type State } from './model';
+import { emptyMeta, type SyncMeta } from './sync';
 
-// Local-first persistence. Swap this module for a sync backend
-// (or for SwiftData/Core Data on iOS) without touching the domain logic.
+// Local-first persistence. The domain logic never touches storage directly,
+// so this module can be swapped (e.g. for SwiftData on iOS).
 
 const KEY = 'tapper.state.v1';
+const META_KEY = 'tapper.sync.v1';
 
 export function loadState(): State {
   try {
@@ -27,4 +29,20 @@ export function saveState(state: State): void {
   } catch {
     /* storage unavailable (private mode etc.) – app still works in memory */
   }
+}
+
+export interface StoredMeta { userId: string | null; meta: SyncMeta }
+
+export function loadMeta(): StoredMeta {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if (raw) return JSON.parse(raw) as StoredMeta;
+  } catch { /* ignore */ }
+  return { userId: null, meta: emptyMeta() };
+}
+
+export function saveMeta(m: StoredMeta): void {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(m));
+  } catch { /* ignore */ }
 }

@@ -456,3 +456,32 @@ h2 {
   .week .project-row .acc { padding-left: 8px; }
   .week .sum { padding-left: 6px; }
 }
+
+/* ---------- Sync ---------- */
+
+.editor.plain { border-bottom: 0; padding-top: 0; }
+.error-text { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--muted);
+}
+.status-dot.synced { background: #2f9e44; }
+.status-dot.syncing { background: #e67700; }
+.status-dot.error { background: var(--danger); }
+.bottomnav button { position: relative; }
+.nav-dot {
+  position: absolute;
+  top: 10px;
+  margin-left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.nav-dot.error { background: var(--danger); }
+.setup-view section > .field + .field { margin-top: 20px; }

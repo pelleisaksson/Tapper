@@ -3,6 +3,8 @@ import {
   newId, KEY_COLORS, PRESET_INTERVALS, intervalLabel, intervalFor,
   type Customer, type Project, type Interval, type State,
 } from '../core/model';
+import type { SyncApi } from './useSync';
+import { SyncSection } from './SyncSection';
 
 type Update = (fn: (s: State) => State) => void;
 
@@ -120,7 +122,9 @@ function moveIn<T extends { id: string }>(arr: T[], id: string, dir: -1 | 1, sam
   return out;
 }
 
-export function SetupView({ state, update, startAdding }: { state: State; update: Update; startAdding?: boolean }) {
+export function SetupView({ state, update, startAdding, sync }: {
+  state: State; update: Update; startAdding?: boolean; sync: SyncApi;
+}) {
   const newCustomer = (): Editing => ({
     kind: 'customer', isNew: true,
     draft: { id: newId(), name: '', color: KEY_COLORS[state.customers.length % KEY_COLORS.length] },
@@ -189,6 +193,7 @@ export function SetupView({ state, update, startAdding }: { state: State; update
     <>
     <header className="topbar"><span className="topbar-title">Kunder och projekt</span></header>
     <div className="setup-view">
+      {!sync.email && sync.status !== 'off' && <SyncSection sync={sync} />}
       <section>
         {customers.map((c, ci) => {
           const projects = state.projects.filter((p) => p.customerId === c.id && !p.archived);
@@ -279,6 +284,8 @@ export function SetupView({ state, update, startAdding }: { state: State; update
           />
         </label>
       </section>
+
+      {(sync.email || sync.status === 'off') && <SyncSection sync={sync} />}
 
       {(archivedCustomers.length > 0 || archivedProjects.length > 0) && (
         <section>
