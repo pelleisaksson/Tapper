@@ -34,40 +34,12 @@ npm run build    # produktionsbygge till dist/
 
 ## Komma igång med synk och publicering
 
-Allt detta görs en gång. Utan Supabase fungerar appen ändå, men bara lokalt.
+Följ guiden **[docs/SETUP.md](docs/SETUP.md)**. Den visar steg för steg vad du
+ska klicka på i Supabase och GitHub. Utan Supabase fungerar appen ändå, men
+bara lokalt.
 
-### 1. Supabase
-
-1. Skapa ett konto och ett nytt projekt på [supabase.com](https://supabase.com).
-   Välj regionen *North EU (Stockholm)*.
-2. **SQL Editor** → klistra in innehållet i [`supabase/schema.sql`](supabase/schema.sql)
-   → *Run*.
-3. **Authentication → Emails → Templates → Magic Link:** lägg till koden i
-   mejlet, till exempel:
-   ```html
-   <h2>Logga in i Tapper</h2>
-   <p>Din kod: <strong>{{ .Token }}</strong></p>
-   <p>Eller <a href="{{ .ConfirmationURL }}">logga in med länken</a>.</p>
-   ```
-   Koden behövs eftersom en app på iPhones hemskärm inte kan ta emot en
-   inloggningslänk från Mail.
-4. **Authentication → URL Configuration:**
-   - *Site URL*: `https://pelleisaksson.github.io/Tapper/`
-   - *Redirect URLs*: lägg till samma adress och `http://localhost:5173/`
-5. **Project Settings → API:** kopiera *Project URL* och *anon public key*.
-
-### 2. GitHub Pages
-
-1. **Settings → Pages → Source:** välj *GitHub Actions*.
-2. **Settings → Secrets and variables → Actions → Variables:** skapa
-   `VITE_SUPABASE_URL` och `VITE_SUPABASE_ANON_KEY` med värdena från steg 1.5.
-3. Varje push till `main` bygger, testar och publicerar appen på
-   `https://pelleisaksson.github.io/Tapper/`. Det går också att köra manuellt
-   under *Actions*.
-
-### 3. Lokalt
-
-Kopiera `.env.example` till `.env.local` och fyll i samma värden.
+För lokal utveckling med synk: kopiera `.env.example` till `.env.local` och
+fyll i samma värden.
 
 ### Bra att veta
 
