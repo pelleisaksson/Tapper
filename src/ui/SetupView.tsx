@@ -186,9 +186,10 @@ export function SetupView({ state, update, startAdding }: { state: State; update
     update((s) => ({ ...s, [kind]: (s[kind] as { id: string }[]).map((x) => (x.id === id ? { ...x, archived: false } : x)) }));
 
   return (
+    <>
+    <header className="topbar"><span className="topbar-title">Kunder och projekt</span></header>
     <div className="setup-view">
       <section>
-        <h2>Kunder och projekt</h2>
         {customers.map((c, ci) => {
           const projects = state.projects.filter((p) => p.customerId === c.id && !p.archived);
           const custInterval = c.interval ?? state.settings.defaultInterval;
@@ -300,5 +301,6 @@ export function SetupView({ state, update, startAdding }: { state: State; update
         </section>
       )}
     </div>
+    </>
   );
 }

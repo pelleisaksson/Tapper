@@ -3,6 +3,7 @@ import {
   tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, keyboard, type State, type Tap,
 } from '../core/model';
 import { DayHeader } from './DayHeader';
+import { useFitGrid } from './useFitGrid';
 
 interface Props {
   state: State;
@@ -31,6 +32,11 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
   const undoTimer = useRef<number>();
 
   const groups = keyboard(state);
+  const count = groups.reduce((s, g) => s + g.projects.length, 0);
+  const [gridRef, grid] = useFitGrid<HTMLDivElement>(count);
+  // The last tile stretches over any empty cells so the mosaic has no holes.
+  const lastSpan = grid.cols - (count % grid.cols || grid.cols) + 1;
+  let index = 0;
 
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
@@ -57,7 +63,7 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
 
   return (
     <div className="keys-view">
-      <DayHeader state={state} date={date} setDate={setDate} />
+      <DayHeader state={state} date={date} setDate={setDate} minus={minus} setMinus={setMinus} />
 
       {groups.length === 0 ? (
         <div className="empty">
@@ -65,15 +71,26 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
           <button className="primary" onClick={onSetup}>Lägg till kund</button>
         </div>
       ) : (
-        <div className={`mosaic ${minus ? 'minus' : ''}`}>
+        <div
+          ref={gridRef}
+          className={`mosaic ${minus ? 'minus' : ''} ${grid.rowHeight ? 'scroll' : ''}`}
+          style={{
+            gridTemplateColumns: `repeat(${grid.cols}, 1fr)`,
+            gridAutoRows: grid.rowHeight ? `${grid.rowHeight}px` : '1fr',
+          }}
+        >
           {groups.flatMap(({ customer, projects }) =>
             projects.map((p, i) => {
               const min = minutesFor(state.taps, p.id, date);
+              const isLast = ++index === count;
               return (
                 <button
                   key={p.id}
                   className={`tile ${min > 0 ? 'has-time' : ''}`}
-                  style={{ '--tile': shade(customer.color, i) } as React.CSSProperties}
+                  style={{
+                    '--tile': shade(customer.color, i),
+                    gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
+                  } as React.CSSProperties}
                   onClick={() => press(p.id)}
                   aria-label={`${customer.name}, ${p.name}, ${formatHM(min)} registrerat`}
                 >
@@ -98,16 +115,11 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
         </div>
       )}
 
-      <div className="keys-footer">
-        <button className={`toggle ${minus ? 'on' : ''}`} aria-pressed={minus} onClick={() => setMinus((m) => !m)}>
-          Minus
+      {lastTap && (
+        <button className="undo-toast" onClick={undo}>
+          Ångra {lastTap.minutes > 0 ? '+' : '−'}{formatHM(Math.abs(lastTap.minutes))}
         </button>
-        {lastTap && (
-          <button className="undo" onClick={undo}>
-            Ångra {lastTap.minutes > 0 ? '+' : '−'}{formatHM(Math.abs(lastTap.minutes))}
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

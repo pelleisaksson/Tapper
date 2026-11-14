@@ -8,16 +8,17 @@ interface Props {
   state: State;
   date: string;
   setDate: (d: string) => void;
+  minus: boolean;
+  setMinus: (m: boolean) => void;
 }
 
-/** Header with the running counter, a week strip and a month calendar. */
-export function DayHeader({ state, date, setDate }: Props) {
+/** Compact header: ‹ date › on the left, minus toggle and running counter on the right. */
+export function DayHeader({ state, date, setDate, minus, setMinus }: Props) {
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(date);
   const today = toISODate(new Date());
   const total = dayTotal(state, date);
-  const week = weekDates(date);
-  const weekTotal = week.reduce((s, d) => s + dayTotal(state, d), 0);
+  const weekTotal = weekDates(date).reduce((s, d) => s + dayTotal(state, d), 0);
 
   // Brief pulse on the counter whenever the total changes.
   const [pulse, setPulse] = useState(false);
@@ -30,47 +31,40 @@ export function DayHeader({ state, date, setDate }: Props) {
     return () => window.clearTimeout(t);
   }, [total]);
 
+  const d = fromISODate(date);
   const label = date === today
     ? 'Idag'
-    : fromISODate(date).toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' });
+    : d.toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
 
-  function pick(d: string) {
-    setDate(d);
+  function pick(x: string) {
+    setDate(x);
     setCalOpen(false);
   }
 
   return (
-    <div className="day-header">
-      <div className="daybar">
+    <header className="topbar day-header">
+      <div className="datenav">
         <button className="icon-btn" aria-label="Föregående dag" onClick={() => setDate(addDays(date, -1))}>‹</button>
-        <div className="daybar-mid">
-          <button
-            className="date-btn" aria-expanded={calOpen}
-            onClick={() => { setCalMonth(date); setCalOpen((o) => !o); }}
-          >
-            {label} <span className="caret">{calOpen ? '▴' : '▾'}</span>
-          </button>
-          <div className={`counter ${pulse ? 'pulse' : ''}`} aria-live="polite">{formatHM(total)}</div>
-          <div className="counter-sub">Vecka {isoWeek(date)} · {formatHM(weekTotal)}</div>
-        </div>
+        <button
+          className="date-btn" aria-expanded={calOpen} aria-label="Välj dag i kalender"
+          onClick={() => { setCalMonth(date); setCalOpen((o) => !o); }}
+        >
+          {label}
+        </button>
         <button className="icon-btn" aria-label="Nästa dag" onClick={() => setDate(addDays(date, 1))}>›</button>
       </div>
 
-      <div className="week-strip" role="tablist" aria-label="Veckans dagar">
-        {week.map((d) => {
-          const m = dayTotal(state, d);
-          return (
-            <button
-              key={d} role="tab" aria-selected={d === date}
-              className={`ws-day ${d === date ? 'on' : ''} ${d === today ? 'today' : ''}`}
-              onClick={() => setDate(d)}
-            >
-              <span className="ws-wd">{fromISODate(d).toLocaleDateString('sv-SE', { weekday: 'short' }).replace('.', '')}</span>
-              <span className="ws-num">{fromISODate(d).getDate()}</span>
-              <span className="ws-time">{m ? formatHM(m) : '·'}</span>
-            </button>
-          );
-        })}
+      <div className="header-right">
+        <button
+          className={`minus-btn ${minus ? 'on' : ''}`} aria-pressed={minus} aria-label="Minusläge"
+          onClick={() => setMinus(!minus)}
+        >
+          −
+        </button>
+        <div className="counter-box" aria-live="polite">
+          <div className={`counter ${pulse ? 'pulse' : ''}`}>{formatHM(total)}</div>
+          <div className="counter-sub">v{isoWeek(date)} · {formatHM(weekTotal)}</div>
+        </div>
       </div>
 
       {calOpen && (
@@ -95,16 +89,16 @@ export function DayHeader({ state, date, setDate }: Props) {
                 {monthWeeks(calMonth).map((wk) => (
                   <tr key={wk[0]}>
                     <td className="cal-wk">{isoWeek(wk[0])}</td>
-                    {wk.map((d) => {
-                      const m = dayTotal(state, d);
-                      const other = d.slice(0, 7) !== calMonth.slice(0, 7);
+                    {wk.map((x) => {
+                      const m = dayTotal(state, x);
+                      const other = x.slice(0, 7) !== calMonth.slice(0, 7);
                       return (
-                        <td key={d}>
+                        <td key={x}>
                           <button
-                            className={`cal-day ${d === date ? 'on' : ''} ${d === today ? 'today' : ''} ${other ? 'other' : ''}`}
-                            onClick={() => pick(d)}
+                            className={`cal-day ${x === date ? 'on' : ''} ${x === today ? 'today' : ''} ${other ? 'other' : ''}`}
+                            onClick={() => pick(x)}
                           >
-                            <span>{fromISODate(d).getDate()}</span>
+                            <span>{fromISODate(x).getDate()}</span>
                             <small>{m ? formatHM(m) : ''}</small>
                           </button>
                         </td>
@@ -120,6 +114,6 @@ export function DayHeader({ state, date, setDate }: Props) {
           </div>
         </>
       )}
-    </div>
+    </header>
   );
 }

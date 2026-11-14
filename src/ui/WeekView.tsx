@@ -28,14 +28,17 @@ export function WeekView({ state, date, setDate, openDay }: Props) {
 
   return (
     <div className="week-view">
-      <div className="daybar">
-        <button className="icon-btn" aria-label="Föregående vecka" onClick={() => setDate(addDays(date, -7))}>‹</button>
-        <div className="daybar-mid">
-          <div className="daybar-date">Vecka {isoWeek(date)}</div>
-          <div className="daybar-total">{formatHM(weekTotal)}</div>
+      <header className="topbar">
+        <div className="datenav">
+          <button className="icon-btn" aria-label="Föregående vecka" onClick={() => setDate(addDays(date, -7))}>‹</button>
+          <span className="date-btn static">Vecka {isoWeek(date)}</span>
+          <button className="icon-btn" aria-label="Nästa vecka" onClick={() => setDate(addDays(date, 7))}>›</button>
         </div>
-        <button className="icon-btn" aria-label="Nästa vecka" onClick={() => setDate(addDays(date, 7))}>›</button>
-      </div>
+        <div className="header-right">
+          <button className="text-btn" onClick={() => setExporting(true)}>Exportera</button>
+          <div className="counter-box"><div className="counter">{formatHM(weekTotal)}</div></div>
+        </div>
+      </header>
 
       <div className="table-wrap">
         <table className="week">
@@ -88,9 +91,6 @@ export function WeekView({ state, date, setDate, openDay }: Props) {
         </table>
       </div>
 
-      <div className="actions">
-        <button className="primary" onClick={() => setExporting(true)}>Exportera…</button>
-      </div>
       {exporting && <ExportPanel state={state} date={date} onClose={() => setExporting(false)} />}
     </div>
   );

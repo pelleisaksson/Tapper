@@ -17,14 +17,6 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <span className="brand">Tapper</span>
-        <nav className="tabs">
-          <button className={tab === 'keys' ? 'on' : ''} onClick={() => go('keys')}>Dag</button>
-          <button className={tab === 'week' ? 'on' : ''} onClick={() => go('week')}>Vecka</button>
-          <button className={tab === 'setup' ? 'on' : ''} onClick={() => go('setup')}>Kunder</button>
-        </nav>
-      </header>
       <main>
         {tab === 'keys' && (
           <KeysView
@@ -37,6 +29,11 @@ export function App() {
         )}
         {tab === 'setup' && <SetupView state={state} update={update} startAdding={setupAdding} />}
       </main>
+      <nav className="bottomnav">
+        <button className={tab === 'keys' ? 'on' : ''} onClick={() => go('keys')}>Dag</button>
+        <button className={tab === 'week' ? 'on' : ''} onClick={() => go('week')}>Vecka</button>
+        <button className={tab === 'setup' ? 'on' : ''} onClick={() => go('setup')}>Kunder</button>
+      </nav>
     </div>
   );
 }
