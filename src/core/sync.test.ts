@@ -141,3 +141,29 @@ test('ids are unique enough', () => {
   const ids = new Set(Array.from({ length: 5000 }, newId));
   expect(ids.size).toBe(5000);
 });
+
+test('a new device adopts the account settings instead of overwriting them with defaults', async () => {
+  const server = new FakeServer();
+  const a = new Device(server, seeded());
+  a.state = { ...a.state, settings: { ...a.state.settings, defaultInterval: 30 } };
+  await a.sync();
+
+  const b = new Device(server); // fresh device, default settings (15 min)
+  await b.sync();
+  expect(b.state.settings.defaultInterval).toBe(30);
+
+  await a.sync();
+  expect(a.state.settings.defaultInterval).toBe(30);
+});
+
+test('changing settings on a synced device reaches the other device', async () => {
+  const server = new FakeServer();
+  const a = new Device(server, seeded());
+  await a.sync();
+  const b = new Device(server);
+  await b.sync();
+  b.state = { ...b.state, settings: { ...b.state.settings, defaultInterval: 60, workdayMinutes: 450 } };
+  await b.sync();
+  await a.sync();
+  expect(a.state.settings).toEqual({ defaultInterval: 60, workdayMinutes: 450 });
+});

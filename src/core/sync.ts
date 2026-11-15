@@ -77,6 +77,11 @@ function sortedBy<T extends { id: string }>(items: Map<string, { v: T; sort: num
 export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { state: State; applied: Row[] } {
   if (remote.length === 0) return { state, applied: [] };
   const protect = new Set(dirtyRows(state, meta).map(keyOf));
+  // Settings is a single row with a fixed id. On a device that has never
+  // synced it, the local value is just the defaults, not a real edit: adopt
+  // the account's settings instead of overwriting them.
+  const settingsKey = keyOf({ kind: 'settings', id: SETTINGS_ID });
+  if (!(settingsKey in meta.snapshot)) protect.delete(settingsKey);
   // Keep only the newest version of each row.
   const latest = new Map<string, Row>();
   for (const r of remote) latest.set(keyOf(r), r);
