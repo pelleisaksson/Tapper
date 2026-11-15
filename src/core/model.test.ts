@@ -1,7 +1,7 @@
 import {
   emptyState, tap, minutesFor, dayTotal, removeTap, weekDates, isoWeek,
   formatHM, formatHours, exportCSV, intervalLabel, intervalFor, keyboard, monthWeeks, addMonths, datesBetween, rateFor, amountFor, formatMoney, projectTotals,
-  periodRange, shiftPeriod, periodLabel, type State,
+  periodRange, shiftPeriod, periodLabel, tileOrder, type TileSort, type State,
 } from './model';
 
 function stateWith(...intervals: (number | 'day' | undefined)[]): State {
@@ -145,4 +145,28 @@ test('periods', () => {
   expect(periodRange('week', '2026-11-18')).toEqual({ from: '2026-11-16', to: '2026-11-22' });
   expect(shiftPeriod('year', '2026-02-14', 1)).toBe('2027-02-01');
   expect(periodLabel('week', '2026-11-18')).toBe('Vecka 47');
+});
+
+test('tile order: custom, most used, customer A–Ö, project A–Ö', () => {
+  let s = emptyState();
+  s.customers = [
+    { id: 'c1', name: 'Örebro AB', color: '#000' },
+    { id: 'c2', name: 'Alfa', color: '#fff' },
+  ];
+  s.projects = [
+    { id: 'p1', customerId: 'c1', name: 'Zeta' },
+    { id: 'p2', customerId: 'c1', name: 'Beta' },
+    { id: 'p3', customerId: 'c2', name: 'Gamma' },
+  ];
+  const ids = (sort: TileSort) => tileOrder(s, sort, D).map((t) => t.project.id);
+  expect(ids('custom')).toEqual(['p1', 'p2', 'p3']);
+  expect(ids('customer')).toEqual(['p3', 'p2', 'p1']);
+  expect(ids('project')).toEqual(['p2', 'p3', 'p1']);
+  s = tap(s, 'p3', D).state;
+  s = tap(s, 'p3', D).state;
+  s = tap(s, 'p2', D).state;
+  s = tap(s, 'p1', '2026-01-01').state; // older than 90 days: not counted
+  expect(ids('used')).toEqual(['p3', 'p2', 'p1']);
+  // shade follows the custom position within the customer, whatever the order
+  expect(tileOrder(s, 'project', D).find((t) => t.project.id === 'p2')!.shade).toBe(1);
 });

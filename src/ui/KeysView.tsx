@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, keyboard, rateFor, amountFor, formatMoney,
+  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, tileOrder, rateFor, amountFor, formatMoney,
   type State, type Tap,
 } from '../core/model';
 import { useFitGrid } from './useFitGrid';
@@ -31,12 +31,11 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
   const [floats, setFloats] = useState<Float[]>([]);
   const undoTimer = useRef<number>();
 
-  const groups = keyboard(state);
-  const count = groups.reduce((s, g) => s + g.projects.length, 0);
+  const tiles = tileOrder(state, state.settings.tileSort);
+  const count = tiles.length;
   const [gridRef, grid] = useFitGrid<HTMLDivElement>(count);
   // The last tile stretches over any empty cells so the mosaic has no holes.
   const lastSpan = grid.cols - (count % grid.cols || grid.cols) + 1;
-  let index = 0;
 
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
@@ -63,7 +62,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
 
   return (
     <div className="keys-view">
-      {groups.length === 0 ? (
+      {count === 0 ? (
         <div className="empty">
           <p>Lägg upp en kund och dess projekt för att få tangenter.</p>
           <button className="primary" onClick={onSetup}>Lägg till kund</button>
@@ -77,51 +76,49 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
             gridAutoRows: grid.rowHeight ? `${grid.rowHeight}px` : '1fr',
           }}
         >
-          {groups.flatMap(({ customer, projects }) =>
-            projects.map((p, i) => {
-              const min = minutesFor(state.taps, p.id, date);
-              const rate = rateFor(state, p);
-              const interval = (editMode ? '−' : '+') + intervalLabel(intervalFor(state, p));
-              const isLast = ++index === count;
-              return (
-                <button
-                  key={p.id}
-                  className={`tile ${min > 0 ? 'has-time' : ''} ${rate ? 'has-rate' : ''}`}
-                  style={{
-                    '--tile': shade(customer.color, i),
-                    gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
-                  } as React.CSSProperties}
-                  onClick={() => press(p.id)}
-                  aria-label={`${customer.name}, ${p.name}, ${formatHM(min)} registrerat`}
-                >
-                  <span className="tile-top">
-                    {customer.name}
-                    {rate && <span className="tile-interval"> · {interval}</span>}
-                  </span>
-                  <span className="tile-mid">
-                    <span className="tile-name">{p.name}</span>
-                    {min > 0 && (
-                      <>
-                        <span className="tile-rule" />
-                        <span className="tile-time">{formatHM(min)}</span>
-                      </>
-                    )}
-                  </span>
-                  {rate ? (
-                    <span className="tile-bottom split">
-                      <span>{formatMoney(rate)}/h</span>
-                      <span className="tile-sum">{min > 0 ? formatMoney(amountFor(min, rate)) : ''}</span>
-                    </span>
-                  ) : (
-                    <span className="tile-bottom">{interval}</span>
+          {tiles.map(({ customer, project: p, shade: i }, index) => {
+            const min = minutesFor(state.taps, p.id, date);
+            const rate = rateFor(state, p);
+            const interval = (editMode ? '−' : '+') + intervalLabel(intervalFor(state, p));
+            const isLast = index === count - 1;
+            return (
+              <button
+                key={p.id}
+                className={`tile ${min > 0 ? 'has-time' : ''}`}
+                style={{
+                  '--tile': shade(customer.color, i),
+                  gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
+                } as React.CSSProperties}
+                onClick={() => press(p.id)}
+                aria-label={`${customer.name}, ${p.name}, ${formatHM(min)} registrerat`}
+              >
+                <span className="tile-row tile-top">
+                  <span className="tile-customer">{customer.name}</span>
+                  <span className="tile-interval">{interval}</span>
+                </span>
+                <span className="tile-mid">
+                  <span className="tile-name">{p.name}</span>
+                  {min > 0 && (
+                    <>
+                      <span className="tile-rule" />
+                      <span className="tile-time">{formatHM(min)}</span>
+                    </>
                   )}
-                  {floats.filter((f) => f.projectId === p.id).map((f) => (
-                    <span key={f.id} className="float">{f.text}</span>
-                  ))}
-                </button>
-              );
-            }),
-          )}
+                </span>
+                <span className="tile-row tile-bottom">
+                  {rate !== undefined && (
+                    <>
+                      <span className="tile-rate">{formatMoney(rate)}/h</span>
+                      <span className="tile-sum">{formatMoney(amountFor(min, rate))}</span>
+                    </>
+                  )}
+                </span>
+                {floats.filter((f) => f.projectId === p.id).map((f) => (
+                  <span key={f.id} className="float">{f.text}</span>
+                ))}
+              </button>
+            );
+          })}
         </div>
       )}
 

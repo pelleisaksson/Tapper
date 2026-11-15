@@ -10,8 +10,10 @@ eller en dag, på vald dag.
   färg, i olika nyanser, så att de bildar en mosaik som fyller skärmen.
 - **Intervall och timpris i tre nivåer:** globalt, per kund och per projekt.
   Intervallet "Dag" motsvarar en arbetsdag, vars längd ställs in.
-- **Plattorna** visar projektnamn och registrerad tid. Med timpris visas
-  timpris och summa i nederkant, annars kundnamn och intervall.
+- **Plattorna** visar kund och intervall överst, projektnamn och registrerad
+  tid i mitten och, om timpris finns, timpris och summa nederst.
+- **Sortering** av plattorna: egen ordning, mest använda (antal tryck senaste
+  90 dagarna), kund A–Ö eller projekt A–Ö.
 - **Sidhuvud** med räknare. Tryck på datumet för kalendern, och därifrån för
   vyerna Vecka, Månad och År. Pennan slår på redigering, där ett tryck drar av
   tid. Kugghjulet öppnar inställningarna.
