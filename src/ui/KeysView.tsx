@@ -76,11 +76,12 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
             const rate = rateFor(state, p);
             const interval = (editMode ? '−' : '+') + intervalLabel(intervalFor(state, p));
             const isLast = index === count - 1;
+            const inLastRow = !grid.rowHeight && index >= count - (count % grid.cols || grid.cols);
             const bg = shade(customer.color, i);
             return (
               <button
                 key={p.id}
-                className={`tile ${min > 0 ? 'has-time' : ''}`}
+                className={`tile ${min > 0 ? 'has-time' : ''} ${inLastRow ? 'edge-bottom' : ''}`}
                 style={{
                   '--tile': bg,
                   color: readableText(bg),
@@ -93,7 +94,10 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
                   <span className="tile-customer">{customer.name}</span>
                   <span className="tile-interval">{interval}</span>
                 </span>
-                <span className="tile-mid">
+                <span
+                  className="tile-mid"
+                  style={{ '--longest': Math.max(7, ...p.name.split(/\s+/).map((w) => w.length)) } as React.CSSProperties}
+                >
                   <span className="tile-name">{p.name}</span>
                   {min > 0 && (
                     <>

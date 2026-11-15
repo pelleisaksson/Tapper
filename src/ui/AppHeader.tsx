@@ -3,7 +3,7 @@ import {
   addMonths, dateRangeTotal, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
   shiftPeriod, toISODate, TILE_SORTS, type Period, type State, type TileSort,
 } from '../core/model';
-import { GearIcon, PencilIcon, SortIcon } from './icons';
+import { GearIcon, PlusMinusIcon, SortIcon } from './icons';
 
 export type View = Period | 'settings';
 
@@ -90,9 +90,9 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
         {view === 'day' && (
           <button
             className={`icon-btn tool ${editMode ? 'on' : ''}`} aria-pressed={editMode}
-            aria-label="Redigera (tryck drar av tid)" onClick={() => setEditMode(!editMode)}
+            aria-label="Plus/minus: tryck drar av tid" onClick={() => setEditMode(!editMode)}
           >
-            <PencilIcon />
+            <PlusMinusIcon />
           </button>
         )}
         <button
