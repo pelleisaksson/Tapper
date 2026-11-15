@@ -3,7 +3,8 @@ import {
   addMonths, dateRangeTotal, formatDuration, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
   shiftPeriod, toISODate, TILE_SORTS, type Period, type State, type TileSort,
 } from '../core/model';
-import { CommentIcon, GearIcon, PlusMinusIcon, SortIcon } from './icons';
+import { CommentIcon, FullscreenIcon, GearIcon, PlusMinusIcon, SortIcon } from './icons';
+import { useFullscreen } from './useFullscreen';
 import { NotesPanel } from './NotesPanel';
 
 export type View = Period | 'settings';
@@ -27,6 +28,7 @@ interface Props {
  */
 export function AppHeader({ state, view, setView, date, setDate, editMode, setEditMode, setTileSort, update, syncProblem }: Props) {
   const [notesOpen, setNotesOpen] = useState(false);
+  const fullscreen = useFullscreen();
   const [sortOpen, setSortOpen] = useState(false);
   const tileSort = state.settings.tileSort ?? 'custom';
   const [calOpen, setCalOpen] = useState(false);
@@ -109,6 +111,14 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
             aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)}
           >
             <CommentIcon />
+          </button>
+        )}
+        {fullscreen.supported && (
+          <button
+            className="icon-btn tool fullscreen-btn" aria-pressed={fullscreen.active}
+            aria-label={fullscreen.active ? 'Lämna fullskärm' : 'Fullskärm'} onClick={fullscreen.toggle}
+          >
+            <FullscreenIcon exit={fullscreen.active} />
           </button>
         )}
         <button
