@@ -22,6 +22,10 @@ eller en dag, på vald dag.
   vyerna Vecka, Månad och År. Pennan slår på redigering, där ett tryck drar av
   tid. Kugghjulet öppnar inställningarna.
 - **Ångra** efter varje tryck.
+- **Kommentarer:** pratbubblan i sidhuvudet visar dagens registreringar, med
+  ett fritextfält per projekt för vad som gjordes. Kommentarerna följer med i
+  exporten.
+- **Tid** visas som "1 h 30 min" på plattorna och i sidhuvudet.
 - **Export** till Excel (.xlsx med summering och detaljerad redovisning) eller
   CSV för valfritt datumintervall, med timmar, timpris och belopp.
 - **Synk mellan enheter** via Supabase, med inloggning med e-post och lösenord.

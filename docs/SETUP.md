@@ -164,6 +164,29 @@ publiceras när den kommer in på `main`.
 - [ ] Öppna appen från hemskärmen och logga in med e-post och lösenord.
       Hemskärmsappen har egen inloggning, skild från Safari.
 
+## Uppdatering: Kommentarer (november 2026)
+
+Om databasen skapades före november 2026 behöver den tillåta kommentarer.
+Gör det här en gång:
+
+- [ ] Gå till Supabase och klicka **SQL Editor** i vänstermenyn, sedan **+ New query**.
+- [ ] Klistra in innehållet i [`supabase/2026-11-kommentarer.sql`](../supabase/2026-11-kommentarer.sql):
+
+```sql
+alter table public.items drop constraint if exists items_kind_check;
+alter table public.items add constraint items_kind_check
+  check (kind in ('customer', 'project', 'tap', 'note', 'settings'));
+```
+
+- [ ] Klicka **Run**. Det ska stå *Success. No rows returned*.
+- [ ] Öppna appen och tryck **Synka nu** under kugghjulet. Kommentarer som
+      skrivits innan dess skickas upp nu.
+
+Tills det är gjort sparas kommentarerna på enheten. Allt annat synkas som
+vanligt, och under kugghjulet står att kommentarerna väntar på databasen.
+
+---
+
 ## Om något krånglar
 
 | Problem | Lösning |

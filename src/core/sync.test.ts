@@ -1,5 +1,5 @@
-import { emptyState, tap, minutesFor, newId, type State } from './model';
-import { syncOnce, emptyMeta, dirtyRows, type Remote, type Row, type SyncMeta, keyOf } from './sync';
+import { emptyState, tap, minutesFor, newId, setNote, noteFor, noteId, type State } from './model';
+import { syncOnce, emptyMeta, dirtyRows, PartialPushError, type Remote, type Row, type SyncMeta, keyOf } from './sync';
 
 /** In-memory server with a monotonic clock, like the Supabase table. */
 class FakeServer {
@@ -234,4 +234,41 @@ test('a device with an old-format snapshot and stale data does not overwrite new
   expect(ipad.state.projects[0].name).toBe('Nytt namn');
   expect(phone.state.customers[0].color).toBe('#d63b7a');
   expect(phone.state.projects[0].name).toBe('Nytt namn');
+});
+
+test('comments sync between devices and an emptied comment is removed', async () => {
+  const server = new FakeServer();
+  const a = new Device(server, seeded());
+  a.state = setNote(a.state, 'p1', D, 'Möte med styrgruppen');
+  await a.sync();
+  const b = new Device(server);
+  await b.sync();
+  expect(noteFor(b.state, 'p1', D)).toBe('Möte med styrgruppen');
+  b.state = setNote(b.state, 'p1', D, '');
+  await b.sync();
+  await a.sync();
+  expect(noteFor(a.state, 'p1', D)).toBe('');
+});
+
+test('if the server rejects comments, everything else is still committed and comments are retried', async () => {
+  const server = new FakeServer();
+  const base = server.remote();
+  let notesAllowed = false;
+  const remote: Remote = {
+    pull: base.pull,
+    push: async (rows) => {
+      const saved = await base.push(rows.filter((r) => r.kind !== 'note'));
+      if (!notesAllowed && rows.some((r) => r.kind === 'note')) throw new PartialPushError(saved, new Error('kind check'));
+      return [...saved, ...(await base.push(rows.filter((r) => r.kind === 'note')))];
+    },
+  };
+  const a = new Device(server, seeded());
+  a.state = setNote(tap(a.state, 'p1', D).state, 'p1', D, 'Text');
+  const run = () => syncOnce(remote, () => a.state, (s) => (a.state = s), () => a.meta, (m) => (a.meta = m));
+  await expect(run()).rejects.toThrow('kind check');
+  expect(dirtyRows(a.state, a.meta).map((r) => r.kind)).toEqual(['note']);
+  notesAllowed = true;
+  await run();
+  expect(dirtyRows(a.state, a.meta)).toEqual([]);
+  expect(server.rows.has('note:' + noteId('p1', D))).toBe(true);
 });

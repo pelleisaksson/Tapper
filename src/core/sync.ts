@@ -8,9 +8,9 @@
 // pushed is never overwritten by a pull; it is pushed and wins. Taps are
 // separate rows, so taps from different devices never conflict.
 
-import { DEFAULT_SETTINGS, type Customer, type Project, type Settings, type State, type Tap } from './model';
+import { DEFAULT_SETTINGS, type Customer, type Note, type Project, type Settings, type State, type Tap } from './model';
 
-export type Kind = 'customer' | 'project' | 'tap' | 'settings';
+export type Kind = 'customer' | 'project' | 'tap' | 'note' | 'settings';
 
 export interface Row {
   kind: Kind;
@@ -39,6 +39,13 @@ export interface Remote {
   pull(since: string | null): Promise<Row[]>;
   /** Upsert rows; returns them with server timestamps. */
   push(rows: Row[]): Promise<Row[]>;
+}
+
+/** Thrown by Remote.push when only some rows were saved. */
+export class PartialPushError extends Error {
+  constructor(public saved: Row[], public cause: Error) {
+    super(cause.message);
+  }
 }
 
 export const emptyMeta = (): SyncMeta => ({ snapshot: {}, cursor: null, format: SNAPSHOT_FORMAT });
@@ -83,6 +90,7 @@ export function rowsOf(state: State): Map<string, Row> {
   state.customers.forEach((c, i) => add('customer', c.id, c, i));
   state.projects.forEach((p, i) => add('project', p.id, p, i));
   state.taps.forEach((t) => add('tap', t.id, t, 0));
+  (state.notes ?? []).forEach((n) => add('note', n.id, n, 0));
   add('settings', SETTINGS_ID, state.settings, 0);
   return m;
 }
@@ -123,6 +131,7 @@ export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { stat
   const customers = new Map(state.customers.map((v, i) => [v.id, { v, sort: i }]));
   const projects = new Map(state.projects.map((v, i) => [v.id, { v, sort: i }]));
   const taps = new Map(state.taps.map((t) => [t.id, t]));
+  const notes = new Map((state.notes ?? []).map((n) => [n.id, n]));
   let settings: Settings = state.settings;
   const applied: Row[] = [];
 
@@ -144,6 +153,10 @@ export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { stat
         if (r.deleted) taps.delete(r.id);
         else taps.set(r.id, r.data as Tap);
         break;
+      case 'note':
+        if (r.deleted) notes.delete(r.id);
+        else notes.set(r.id, r.data as Note);
+        break;
       case 'settings':
         if (!r.deleted) settings = { ...DEFAULT_SETTINGS, ...(r.data as Settings) };
         break;
@@ -156,6 +169,7 @@ export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { stat
       customers: sortedBy(customers),
       projects: sortedBy(projects),
       taps: [...taps.values()].sort((a, b) => a.at - b.at),
+      notes: [...notes.values()],
       settings,
     },
   };
@@ -203,10 +217,20 @@ export async function syncOnce(
   // 2. Push local changes.
   const dirty = dirtyRows(getState(), getMeta());
   if (dirty.length) {
-    const saved = await remote.push(dirty);
-    // Commit the content we pushed (not whatever the state is now).
+    let saved: Row[];
+    let failure: Error | null = null;
+    try {
+      saved = await remote.push(dirty);
+    } catch (e) {
+      if (!(e instanceof PartialPushError)) throw e;
+      saved = e.saved;
+      failure = e.cause;
+    }
+    // Commit the content we pushed (not whatever the state is now), and only rows
+    // the server actually saved; the rest stay dirty and are retried next round.
     const stamp = new Map(saved.map((s) => [keyOf(s), s.updated_at]));
-    setMeta(commit(getMeta(), dirty.map((d) => ({ ...d, updated_at: stamp.get(keyOf(d)) }))));
+    setMeta(commit(getMeta(), dirty.filter((d) => stamp.has(keyOf(d))).map((d) => ({ ...d, updated_at: stamp.get(keyOf(d)) }))));
+    if (failure) throw failure;
   }
   return { pulled: r.applied.length, pushed: dirty.length };
 }

@@ -108,7 +108,7 @@ input:focus { border-bottom-color: var(--fg); }
 
 .app-header {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   padding: 0 12px;
   gap: 4px;
 }
@@ -621,3 +621,35 @@ table.summary { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: 
 .sheet { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 .mosaic.scroll { padding-bottom: env(safe-area-inset-bottom); }
 .version { font-size: 11px; color: var(--muted); text-align: center; margin: 24px 0 0; font-variant-numeric: tabular-nums; }
+
+/* ---------- Brand link and comments ---------- */
+
+button.brand { border: 0; padding: 8px 0; text-align: left; justify-self: start; }
+.notes-sheet { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.notes-list { display: flex; flex-direction: column; gap: 14px; }
+.note-row { display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--c); padding-left: 10px; }
+.note-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.note-project { display: flex; flex-direction: column; font-weight: 700; }
+.note-project small { font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.note-time { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note-input {
+  width: 100%;
+  resize: none;
+  font: inherit;
+  color: inherit;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  min-height: 44px;
+  border-radius: 0;
+  outline: none;
+  overflow: hidden;
+}
+.note-input:focus { border-color: var(--fg); }
+
+@media (max-width: 520px) {
+  .center .icon-btn { width: 24px; }
+  .counter { font-size: 17px; }
+  .icon-btn.tool { width: 28px; }
+  .brand { font-size: 16px; }
+}

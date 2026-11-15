@@ -32,3 +32,12 @@ export function SortIcon() {
     </svg>
   );
 }
+
+export function CommentIcon() {
+  return (
+    <svg {...base}>
+      <path d="M4 5.5h16v10H10l-4.5 3.5V15.5H4z" />
+      <path d="M8 9.5h8M8 12.5h5" />
+    </svg>
+  );
+}
