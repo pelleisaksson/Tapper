@@ -27,7 +27,12 @@ export interface SyncMeta {
   snapshot: Record<string, string>;
   /** Server timestamp of the newest row seen. */
   cursor: string | null;
+  /** How snapshot entries are serialized. Missing = 1 (plain JSON.stringify). */
+  format?: number;
 }
+
+/** Current snapshot serialization: JSON with sorted keys. */
+export const SNAPSHOT_FORMAT = 2;
 
 export interface Remote {
   /** Rows changed after `since` (all rows if null), oldest first. */
@@ -36,7 +41,7 @@ export interface Remote {
   push(rows: Row[]): Promise<Row[]>;
 }
 
-export const emptyMeta = (): SyncMeta => ({ snapshot: {}, cursor: null });
+export const emptyMeta = (): SyncMeta => ({ snapshot: {}, cursor: null, format: SNAPSHOT_FORMAT });
 
 const SETTINGS_ID = 'settings';
 export const keyOf = (r: { kind: Kind; id: string }) => `${r.kind}:${r.id}`;
@@ -52,6 +57,24 @@ function stable(v: unknown): string {
   return JSON.stringify(v ?? null);
 }
 const content = (r: Row) => stable([r.data, r.sort]);
+
+/**
+ * Re-encode a snapshot written by an older app version in the current format.
+ * Without this, every row would look locally edited after an upgrade, and a
+ * device with stale data would push it all and overwrite newer edits.
+ */
+export function migrateMeta(meta: SyncMeta): SyncMeta {
+  if ((meta.format ?? 1) >= SNAPSHOT_FORMAT) return meta;
+  const snapshot: Record<string, string> = {};
+  for (const [k, v] of Object.entries(meta.snapshot)) {
+    try {
+      snapshot[k] = stable(JSON.parse(v));
+    } catch {
+      snapshot[k] = v;
+    }
+  }
+  return { ...meta, snapshot, format: SNAPSHOT_FORMAT };
+}
 
 export function rowsOf(state: State): Map<string, Row> {
   const m = new Map<string, Row>();
@@ -148,7 +171,8 @@ export function commit(meta: SyncMeta, rows: Row[]): SyncMeta {
     else snapshot[k] = content(r);
     if (r.updated_at && (!cursor || r.updated_at > cursor)) cursor = r.updated_at;
   }
-  return { snapshot, cursor };
+  // Keep the format as is: commit never upgrades a snapshot it didn't migrate.
+  return { snapshot, cursor, format: meta.format };
 }
 
 /**
@@ -163,6 +187,10 @@ export async function syncOnce(
   getMeta: () => SyncMeta,
   setMeta: (m: SyncMeta) => void,
 ): Promise<{ pulled: number; pushed: number }> {
+  // 0. Bring a snapshot from an older app version up to date before comparing.
+  const migrated = migrateMeta(getMeta());
+  if (migrated !== getMeta()) setMeta(migrated);
+
   // 1. Pull and apply.
   const pulled = await remote.pull(getMeta().cursor);
   const r = applyRemote(getState(), pulled, getMeta());
