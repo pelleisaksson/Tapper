@@ -4,6 +4,7 @@ import {
   type State, type Tap,
 } from '../core/model';
 import { useFitGrid } from './useFitGrid';
+import { readableText, tint } from '../core/color';
 
 interface Props {
   state: State;
@@ -17,14 +18,8 @@ interface Props {
 interface Float { id: string; projectId: string; text: string }
 
 /** Small tonal shifts so a customer's projects form a mosaic in the customer's color. */
-const SHADES = [0, 12, -10, 22, -18, 6, -4, 16];
-function shade(color: string, i: number): string {
-  const s = SHADES[i % SHADES.length];
-  if (s === 0) return color;
-  return s > 0
-    ? `color-mix(in srgb, ${color}, white ${s}%)`
-    : `color-mix(in srgb, ${color}, black ${-s}%)`;
-}
+const SHADES = [0, 0.12, -0.1, 0.22, -0.18, 0.06, -0.04, 0.16];
+const shade = (color: string, i: number) => tint(color, SHADES[i % SHADES.length]);
 
 export function KeysView({ state, update, date, editMode, onSetup }: Props) {
   const [lastTap, setLastTap] = useState<Tap | null>(null);
@@ -81,12 +76,14 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
             const rate = rateFor(state, p);
             const interval = (editMode ? '−' : '+') + intervalLabel(intervalFor(state, p));
             const isLast = index === count - 1;
+            const bg = shade(customer.color, i);
             return (
               <button
                 key={p.id}
                 className={`tile ${min > 0 ? 'has-time' : ''}`}
                 style={{
-                  '--tile': shade(customer.color, i),
+                  '--tile': bg,
+                  color: readableText(bg),
                   gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
                 } as React.CSSProperties}
                 onClick={() => press(p.id)}
