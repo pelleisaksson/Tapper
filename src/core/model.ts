@@ -50,6 +50,8 @@ export interface Settings {
   hourlyRate?: number;
   /** How the tiles are ordered. Unset = custom order. */
   tileSort?: TileSort;
+  /** Custom palette (hex colors), e.g. from a .ase file. Unset = KEY_COLORS. */
+  palette?: string[];
 }
 
 export type TileSort = 'custom' | 'used' | 'customer' | 'project';
@@ -70,10 +72,13 @@ export interface State {
 
 export const DEFAULT_SETTINGS: Settings = { defaultInterval: 15, workdayMinutes: 480 };
 
-export const KEY_COLORS = [
-  '#1f6feb', '#d9480f', '#2f9e44', '#c2255c', '#7048e8',
-  '#0b7285', '#e67700', '#495057',
-];
+/** Default palette (Adobe Color theme). Replaceable in the settings via a .ase file. */
+export const KEY_COLORS = ['#95b9d4', '#d4ba94', '#7e8a94', '#7f7361', '#324654'];
+
+/** The palette in use: the uploaded one, or the default. */
+export function paletteOf(state: State): string[] {
+  return state.settings.palette?.length ? state.settings.palette : KEY_COLORS;
+}
 
 export function emptyState(): State {
   return { customers: [], projects: [], taps: [], settings: { ...DEFAULT_SETTINGS } };

@@ -8,6 +8,10 @@ eller en dag, på vald dag.
 
 - **Kunder → projekt.** Varje kund har en färg. Projekten blir plattor i kundens
   färg, i olika nyanser, så att de bildar en mosaik som fyller skärmen.
+  Textfärgen väljs automatiskt (mörk eller vit) så att den alltid går att läsa.
+- **Färger:** välj ur paletten, i ett färghjul eller med hex-kod. Paletten kan
+  ersättas med en .ase-fil (t.ex. exporterad från Adobe Color) under
+  Inställningar.
 - **Intervall och timpris i tre nivåer:** globalt, per kund och per projekt.
   Intervallet "Dag" motsvarar en arbetsdag, vars längd ställs in.
 - **Plattorna** visar kund och intervall överst, projektnamn och registrerad

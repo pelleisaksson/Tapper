@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
-  newId, KEY_COLORS, PRESET_INTERVALS, intervalLabel, intervalFor, rateFor, formatMoney,
+  newId, paletteOf, PRESET_INTERVALS, intervalLabel, intervalFor, rateFor, formatMoney,
   type Customer, type Project, type Interval, type State,
 } from '../core/model';
 import type { SyncApi } from './useSync';
 import { SyncSection } from './SyncSection';
+import { ColorPicker } from './ColorPicker';
+import { parseASE } from '../core/ase';
 
 type Update = (fn: (s: State) => State) => void;
 
@@ -67,8 +69,8 @@ function RateInput({ value, onChange, inherited, label = 'Timpris (kr/h)' }: {
   );
 }
 
-function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLabel, inheritedRate }: {
-  initial: Customer; isNew: boolean; defaultLabel: string; inheritedRate?: number;
+function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLabel, inheritedRate, palette }: {
+  initial: Customer; isNew: boolean; defaultLabel: string; inheritedRate?: number; palette: string[];
   onSave: (c: Customer) => void; onCancel: () => void; onRemove: () => void;
 }) {
   const [c, setC] = useState(initial);
@@ -84,14 +86,7 @@ function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLab
       </label>
       <div className="field">
         <span>Färg</span>
-        <div className="colors">
-          {KEY_COLORS.map((col) => (
-            <button
-              key={col} className={`swatch ${c.color === col ? 'on' : ''}`} style={{ background: col }}
-              aria-label={`Färg ${col}`} onClick={() => setC({ ...c, color: col })}
-            />
-          ))}
-        </div>
+        <ColorPicker value={c.color} palette={palette} onChange={(color) => setC({ ...c, color })} />
       </div>
       <div className="field">
         <span>Intervall</span>
@@ -148,12 +143,53 @@ function moveIn<T extends { id: string }>(arr: T[], id: string, dir: -1 | 1, sam
   return out;
 }
 
+/** The palette offered when picking colors; replaceable with a .ase file. */
+function PaletteField({ palette, isCustom, onChange }: {
+  palette: string[]; isCustom: boolean; onChange: (p: string[] | undefined) => void;
+}) {
+  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const file = useRef<HTMLInputElement>(null);
+  return (
+    <div className="field">
+      <span>Färgpalett</span>
+      <div className="colors">
+        {palette.map((c) => <span key={c} className="swatch static" style={{ background: c }} title={c} />)}
+      </div>
+      <div className="editor-actions">
+        <button type="button" onClick={() => file.current?.click()}>Ladda upp .ase-fil</button>
+        {isCustom && (
+          <button type="button" className="link" onClick={() => { onChange(undefined); setMsg({ text: 'Standardpaletten används igen.' }); }}>
+            Återställ standard
+          </button>
+        )}
+        <input
+          ref={file} type="file" accept=".ase,application/octet-stream" hidden
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (!f) return;
+            try {
+              const colors = [...new Set(parseASE(await f.arrayBuffer()).map((s) => s.hex))];
+              onChange(colors);
+              setMsg({ text: `${colors.length} färger inlästa från ${f.name}. Befintliga kunder behåller sina färger.` });
+            } catch (err) {
+              setMsg({ text: err instanceof Error ? err.message : String(err), error: true });
+            }
+          }}
+        />
+      </div>
+      {msg && <p className={msg.error ? 'error-text' : 'info-text'}>{msg.text}</p>}
+    </div>
+  );
+}
+
 export function SetupView({ state, update, startAdding, sync }: {
   state: State; update: Update; startAdding?: boolean; sync: SyncApi;
 }) {
+  const palette = paletteOf(state);
   const newCustomer = (): Editing => ({
     kind: 'customer', isNew: true,
-    draft: { id: newId(), name: '', color: KEY_COLORS[state.customers.length % KEY_COLORS.length] },
+    draft: { id: newId(), name: '', color: palette[state.customers.length % palette.length] },
   });
   const [editing, setEditing] = useState<Editing>(() => (startAdding ? newCustomer() : null));
   const defaultLabel = `Standard (${intervalLabel(state.settings.defaultInterval)})`;
@@ -228,7 +264,7 @@ export function SetupView({ state, update, startAdding, sync }: {
             <div key={c.id} className="customer" style={{ '--c': c.color } as React.CSSProperties}>
               {editing?.kind === 'customer' && editing.draft.id === c.id ? (
                 <CustomerEditor
-                  initial={editing.draft} isNew={false} defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate}
+                  initial={editing.draft} isNew={false} defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate} palette={palette}
                   onSave={saveCustomer} onCancel={() => setEditing(null)} onRemove={() => removeCustomer(c)}
                 />
               ) : (
@@ -281,7 +317,7 @@ export function SetupView({ state, update, startAdding, sync }: {
         {editing?.kind === 'customer' && editing.isNew ? (
           <div className="customer" style={{ '--c': editing.draft.color } as React.CSSProperties}>
             <CustomerEditor
-              initial={editing.draft} isNew defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate}
+              initial={editing.draft} isNew defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate} palette={palette}
               onSave={saveCustomer} onCancel={() => setEditing(null)} onRemove={() => {}}
             />
           </div>
@@ -303,6 +339,10 @@ export function SetupView({ state, update, startAdding, sync }: {
           label="Timpris (kr/h)"
           value={state.settings.hourlyRate}
           onChange={(hourlyRate) => update((s) => ({ ...s, settings: { ...s.settings, hourlyRate } }))}
+        />
+        <PaletteField
+          palette={palette} isCustom={!!state.settings.palette?.length}
+          onChange={(p) => update((s) => ({ ...s, settings: { ...s.settings, palette: p } }))}
         />
         <label className="field">
           <span>Arbetsdag (timmar)</span>
