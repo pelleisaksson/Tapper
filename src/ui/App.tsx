@@ -2,48 +2,47 @@ import { useEffect, useState } from 'react';
 import { toISODate } from '../core/model';
 import { useStore } from './useStore';
 import { useSync } from './useSync';
+import { AppHeader, type View } from './AppHeader';
 import { KeysView } from './KeysView';
 import { WeekView } from './WeekView';
+import { SummaryView } from './SummaryView';
 import { SetupView } from './SetupView';
-
-type Tab = 'keys' | 'week' | 'setup';
 
 export function App() {
   const { state, update, getState } = useStore();
   const sync = useSync(state, getState, update);
-  const [tab, setTab] = useState<Tab>('keys');
+  const [view, setView] = useState<View>('day');
   const [date, setDate] = useState(() => toISODate(new Date()));
+  const [editMode, setEditMode] = useState(false);
   const [setupAdding, setSetupAdding] = useState(false);
 
   // Opening a password reset link: go straight to where the new password is set.
-  useEffect(() => { if (sync.recovering) setTab('setup'); }, [sync.recovering]);
+  useEffect(() => { if (sync.recovering) setView('settings'); }, [sync.recovering]);
 
-  const go = (t: Tab) => { setSetupAdding(false); setTab(t); };
+  const go = (v: View) => {
+    setSetupAdding(false);
+    if (v !== 'day') setEditMode(false);
+    setView(v);
+  };
 
   return (
     <div className="app">
+      <AppHeader
+        state={state} view={view} setView={go} date={date} setDate={setDate}
+        editMode={editMode} setEditMode={setEditMode}
+        syncProblem={sync.status === 'error' || sync.status === 'offline' ? sync.status : null}
+      />
       <main>
-        {tab === 'keys' && (
+        {view === 'day' && (
           <KeysView
-            state={state} update={update} date={date} setDate={setDate}
-            onSetup={() => { setSetupAdding(true); setTab('setup'); }}
+            state={state} update={update} date={date} editMode={editMode}
+            onSetup={() => { setSetupAdding(true); setView('settings'); }}
           />
         )}
-        {tab === 'week' && (
-          <WeekView state={state} date={date} setDate={setDate} openDay={(d) => { setDate(d); setTab('keys'); }} />
-        )}
-        {tab === 'setup' && <SetupView state={state} update={update} startAdding={setupAdding} sync={sync} />}
+        {view === 'week' && <WeekView state={state} date={date} openDay={(d) => { setDate(d); go('day'); }} />}
+        {(view === 'month' || view === 'year') && <SummaryView state={state} date={date} period={view} />}
+        {view === 'settings' && <SetupView state={state} update={update} startAdding={setupAdding} sync={sync} />}
       </main>
-      <nav className="bottomnav">
-        <button className={tab === 'keys' ? 'on' : ''} onClick={() => go('keys')}>Dag</button>
-        <button className={tab === 'week' ? 'on' : ''} onClick={() => go('week')}>Vecka</button>
-        <button className={tab === 'setup' ? 'on' : ''} onClick={() => go('setup')}>
-          Kunder
-          {(sync.status === 'error' || sync.status === 'offline') && (
-            <span className={`nav-dot ${sync.status}`} aria-label={sync.status === 'error' ? 'Synkfel' : 'Offline'} />
-          )}
-        </button>
-      </nav>
     </div>
   );
 }

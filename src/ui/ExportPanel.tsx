@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import {
   addDays, addMonths, datesBetween, exportCSV, exportRows, formatHM, toISODate, weekDates,
-  type State,
+  periodRange, type Period, type State,
 } from '../core/model';
 import { exportXLSX } from '../core/xlsx';
 
 interface Props {
   state: State;
-  /** Date used to seed the range (the week being viewed). */
+  /** Date and period used to seed the range (the period being viewed). */
   date: string;
+  period: Period;
   onClose: () => void;
 }
 
@@ -36,10 +37,11 @@ function download(data: BlobPart, type: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function ExportPanel({ state, date, onClose }: Props) {
+export function ExportPanel({ state, date, period, onClose }: Props) {
   const ps = presets(date);
-  const [from, setFrom] = useState(ps[0].from);
-  const [to, setTo] = useState(ps[0].to);
+  const initial = periodRange(period, date);
+  const [from, setFrom] = useState(initial.from);
+  const [to, setTo] = useState(initial.to);
   const valid = !!from && !!to && from <= to;
   const dates = valid ? datesBetween(from, to) : [];
   const rows = exportRows(state, dates);
@@ -102,7 +104,7 @@ export function ExportPanel({ state, date, onClose }: Props) {
             Excel
           </button>
         </div>
-        <p className="hint">Exporterad {toISODate(new Date())}. Excel-filen har en flik med alla rader och en med summering per projekt.</p>
+        <p className="hint">Exporterad {toISODate(new Date())}. Excel-filen har en flik med summering per projekt och en med detaljerad redovisning per dag.</p>
       </div>
     </>
   );
