@@ -191,3 +191,19 @@ test('comments are one per project and day and exported as a column', () => {
   expect(csv[1].endsWith(';"Skrev rapport; ""utkast"""')).toBe(true);
   expect(setNote(s, 'a0', D, '   ').notes).toHaveLength(0);
 });
+
+test('pinned projects come first, A–Ö, whatever the sort', () => {
+  const s = emptyState();
+  s.customers = [{ id: 'c1', name: 'Kund', color: '#000' }];
+  s.projects = [
+    { id: 'p1', customerId: 'c1', name: 'Delta' },
+    { id: 'p2', customerId: 'c1', name: 'Charlie', pinned: true },
+    { id: 'p3', customerId: 'c1', name: 'Alfa' },
+    { id: 'p4', customerId: 'c1', name: 'Bravo', pinned: true },
+  ];
+  for (const sort of ['custom', 'used', 'customer', 'project'] as TileSort[]) {
+    expect(tileOrder(s, sort, D).slice(0, 2).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie']);
+  }
+  expect(tileOrder(s, 'custom', D).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Delta', 'Alfa']);
+  expect(tileOrder(s, 'project', D).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Alfa', 'Delta']);
+});
