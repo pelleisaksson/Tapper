@@ -7,20 +7,19 @@ eller en dag, på vald dag.
 ## Funktioner
 
 - **Kunder → projekt.** Varje kund har en färg. Projekten blir plattor i kundens
-  färg, i olika nyanser, så att de bildar en mosaik.
-- **Intervall i tre nivåer.** Globalt standardvärde, som kan ändras per kund och
-  per projekt (projekt → kund → globalt). Intervallet "Dag" motsvarar en
-  arbetsdag, vars längd ställs in.
-- **Räkneverk i sidhuvudet.** Visar dagens total och veckans total. Varje platta
-  visar sin registrerade tid.
-- **Datumnavigering.** Byt dag med pilarna, i veckoremsan eller i
-  månadskalendern. Kalendern visar vilka dagar som har tid.
-- **Minusläge och Ångra** för att rätta fel.
-- **Veckovy** med summor per kund och projekt.
-- **Export** till Excel (.xlsx) eller CSV för valfritt datumintervall.
-- **Synk mellan enheter** via Supabase, med inloggning med e-post och lösenord. Appen
-  fungerar offline och synkar när nätet är tillbaka. Ändringar syns på andra
-  enheter i realtid.
+  färg, i olika nyanser, så att de bildar en mosaik som fyller skärmen.
+- **Intervall och timpris i tre nivåer:** globalt, per kund och per projekt.
+  Intervallet "Dag" motsvarar en arbetsdag, vars längd ställs in.
+- **Plattorna** visar projektnamn och registrerad tid. Med timpris visas
+  timpris och summa i nederkant, annars kundnamn och intervall.
+- **Sidhuvud** med räknare. Tryck på datumet för kalendern, och därifrån för
+  vyerna Vecka, Månad och År. Pennan slår på redigering, där ett tryck drar av
+  tid. Kugghjulet öppnar inställningarna.
+- **Ångra** efter varje tryck.
+- **Export** till Excel (.xlsx med summering och detaljerad redovisning) eller
+  CSV för valfritt datumintervall, med timmar, timpris och belopp.
+- **Synk mellan enheter** via Supabase, med inloggning med e-post och lösenord.
+  Appen fungerar offline och synkar när nätet är tillbaka.
 - **Fungerar offline.** Kan installeras på hemskärmen som PWA.
 
 ## Utveckling

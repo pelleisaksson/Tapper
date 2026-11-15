@@ -1,6 +1,7 @@
 import {
   emptyState, tap, minutesFor, dayTotal, removeTap, weekDates, isoWeek,
-  formatHM, formatHours, exportCSV, intervalLabel, intervalFor, keyboard, monthWeeks, addMonths, datesBetween, type State,
+  formatHM, formatHours, exportCSV, intervalLabel, intervalFor, keyboard, monthWeeks, addMonths, datesBetween, rateFor, amountFor, formatMoney, projectTotals,
+  periodRange, shiftPeriod, periodLabel, type State,
 } from './model';
 
 function stateWith(...intervals: (number | 'day' | undefined)[]): State {
@@ -97,7 +98,7 @@ test('CSV export', () => {
   s.projects[0].code = 'P-1';
   s = tap(s, 'a0', D).state;
   expect(exportCSV(s, [D])).toBe(
-    'Datum;Kund;Kundnr;Projekt;Projektkod;Minuter;Timmar\n2026-11-16;Kund AB;K1;Projekt 0;P-1;30;0,5',
+    'Datum;Kund;Kundnr;Projekt;Projektkod;Minuter;Timmar;Timpris;Belopp\n2026-11-16;Kund AB;K1;Projekt 0;P-1;30;0,5;;',
   );
 });
 
@@ -112,4 +113,36 @@ test('month weeks are Monday-based and cover the month', () => {
 test('datesBetween is inclusive', () => {
   expect(datesBetween('2026-12-30', '2027-01-02')).toEqual(['2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02']);
   expect(datesBetween('2026-12-30', '2026-12-29')).toEqual([]);
+});
+
+test('hourly rate falls back project -> customer -> global, 0 means none', () => {
+  const s = stateWith(15);
+  expect(rateFor(s, s.projects[0])).toBeUndefined();
+  s.settings.hourlyRate = 900;
+  expect(rateFor(s, s.projects[0])).toBe(900);
+  s.customers[0].rate = 1000;
+  expect(rateFor(s, s.projects[0])).toBe(1000);
+  s.projects[0].rate = 0;
+  expect(rateFor(s, s.projects[0])).toBeUndefined();
+  s.projects[0].rate = 1200;
+  expect(rateFor(s, s.projects[0])).toBe(1200);
+  expect(amountFor(45, 1200)).toBe(900);
+  expect(formatMoney(2850)).toMatch(/^2\s850 kr$/);
+});
+
+test('CSV and totals include rate and amount', () => {
+  let s = stateWith(30);
+  s.settings.hourlyRate = 1000;
+  s = tap(s, 'a0', D).state;
+  s = tap(s, 'a0', '2026-11-17').state;
+  expect(exportCSV(s, [D]).split('\n')[1]).toBe('2026-11-16;Kund AB;K1;Projekt 0;;30;0,5;1000;500');
+  expect(projectTotals(s, weekDates(D)).get('a0')).toEqual({ minutes: 60, amount: 1000 });
+});
+
+test('periods', () => {
+  expect(periodRange('month', '2026-02-14')).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+  expect(periodRange('year', '2026-02-14')).toEqual({ from: '2026-01-01', to: '2026-12-31' });
+  expect(periodRange('week', '2026-11-18')).toEqual({ from: '2026-11-16', to: '2026-11-22' });
+  expect(shiftPeriod('year', '2026-02-14', 1)).toBe('2027-02-01');
+  expect(periodLabel('week', '2026-11-18')).toBe('Vecka 47');
 });

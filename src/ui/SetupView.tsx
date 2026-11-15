@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  newId, KEY_COLORS, PRESET_INTERVALS, intervalLabel, intervalFor,
+  newId, KEY_COLORS, PRESET_INTERVALS, intervalLabel, intervalFor, rateFor, formatMoney,
   type Customer, type Project, type Interval, type State,
 } from '../core/model';
 import type { SyncApi } from './useSync';
@@ -43,8 +43,32 @@ function IntervalPicker({ value, onChange, inheritLabel }: {
   );
 }
 
-function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLabel }: {
-  initial: Customer; isNew: boolean; defaultLabel: string;
+/** Hourly rate in kr. Empty = inherit (shown as placeholder). */
+function RateInput({ value, onChange, inherited, label = 'Timpris (kr/h)' }: {
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+  inherited?: number;
+  label?: string;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input
+        type="number" min={0} step={10} inputMode="numeric"
+        placeholder={inherited ? `Ärver ${formatMoney(inherited)}/h` : 'Inget timpris'}
+        value={value ?? ''}
+        onChange={(e) => {
+          const v = e.target.value.trim();
+          const n = Number(v.replace(',', '.'));
+          onChange(v === '' || !Number.isFinite(n) || n < 0 ? undefined : n);
+        }}
+      />
+    </label>
+  );
+}
+
+function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLabel, inheritedRate }: {
+  initial: Customer; isNew: boolean; defaultLabel: string; inheritedRate?: number;
   onSave: (c: Customer) => void; onCancel: () => void; onRemove: () => void;
 }) {
   const [c, setC] = useState(initial);
@@ -73,6 +97,7 @@ function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLab
         <span>Intervall</span>
         <IntervalPicker inheritLabel={defaultLabel} value={c.interval} onChange={(interval) => setC({ ...c, interval })} />
       </div>
+      <RateInput value={c.rate} inherited={inheritedRate} onChange={(rate) => setC({ ...c, rate })} />
       <div className="editor-actions">
         {!isNew && <button className="danger" onClick={onRemove}>Ta bort</button>}
         <span className="spacer" />
@@ -83,8 +108,8 @@ function CustomerEditor({ initial, isNew, onSave, onCancel, onRemove, defaultLab
   );
 }
 
-function ProjectEditor({ initial, isNew, onSave, onCancel, onRemove, inheritLabel }: {
-  initial: Project; isNew: boolean; inheritLabel: string;
+function ProjectEditor({ initial, isNew, onSave, onCancel, onRemove, inheritLabel, inheritedRate }: {
+  initial: Project; isNew: boolean; inheritLabel: string; inheritedRate?: number;
   onSave: (p: Project) => void; onCancel: () => void; onRemove: () => void;
 }) {
   const [p, setP] = useState(initial);
@@ -102,6 +127,7 @@ function ProjectEditor({ initial, isNew, onSave, onCancel, onRemove, inheritLabe
         <span>Intervall</span>
         <IntervalPicker inheritLabel={inheritLabel} value={p.interval} onChange={(interval) => setP({ ...p, interval })} />
       </div>
+      <RateInput value={p.rate} inherited={inheritedRate} onChange={(rate) => setP({ ...p, rate })} />
       <div className="editor-actions">
         {!isNew && <button className="danger" onClick={onRemove}>Ta bort</button>}
         <span className="spacer" />
@@ -191,25 +217,25 @@ export function SetupView({ state, update, startAdding, sync }: {
 
   return (
     <>
-    <header className="topbar"><span className="topbar-title">Kunder och projekt</span></header>
     <div className="setup-view">
       {(!sync.email || sync.recovering) && sync.status !== 'off' && <SyncSection sync={sync} />}
       <section>
         {customers.map((c, ci) => {
           const projects = state.projects.filter((p) => p.customerId === c.id && !p.archived);
           const custInterval = c.interval ?? state.settings.defaultInterval;
+          const custRate = c.rate ?? state.settings.hourlyRate;
           return (
             <div key={c.id} className="customer" style={{ '--c': c.color } as React.CSSProperties}>
               {editing?.kind === 'customer' && editing.draft.id === c.id ? (
                 <CustomerEditor
-                  initial={editing.draft} isNew={false} defaultLabel={defaultLabel}
+                  initial={editing.draft} isNew={false} defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate}
                   onSave={saveCustomer} onCancel={() => setEditing(null)} onRemove={() => removeCustomer(c)}
                 />
               ) : (
                 <div className="row customer-head">
                   <button className="row-main" onClick={() => setEditing({ kind: 'customer', isNew: false, draft: c })}>
                     <strong>{c.name}</strong>
-                    <small>{[c.code, intervalLabel(custInterval)].filter(Boolean).join(' · ')}</small>
+                    <small>{[c.code, intervalLabel(custInterval), custRate ? `${formatMoney(custRate)}/h` : ''].filter(Boolean).join(' · ')}</small>
                   </button>
                   <button className="icon-btn sm" aria-label="Flytta upp" disabled={ci === 0}
                     onClick={() => update((s) => ({ ...s, customers: moveIn(s.customers, c.id, -1, (_a, b) => !b.archived) }))}>↑</button>
@@ -221,14 +247,14 @@ export function SetupView({ state, update, startAdding, sync }: {
               {projects.map((p, pi) =>
                 editing?.kind === 'project' && editing.draft.id === p.id ? (
                   <ProjectEditor
-                    key={p.id} initial={editing.draft} isNew={false} inheritLabel={`Kundens (${intervalLabel(custInterval)})`}
+                    key={p.id} initial={editing.draft} isNew={false} inheritLabel={`Kundens (${intervalLabel(custInterval)})`} inheritedRate={custRate}
                     onSave={saveProject} onCancel={() => setEditing(null)} onRemove={() => removeProject(p)}
                   />
                 ) : (
                   <div key={p.id} className="row project">
                     <button className="row-main" onClick={() => setEditing({ kind: 'project', isNew: false, draft: p })}>
                       <span>{p.name}</span>
-                      <small>{[p.code, intervalLabel(intervalFor(state, p))].filter(Boolean).join(' · ')}</small>
+                      <small>{[p.code, intervalLabel(intervalFor(state, p)), rateFor(state, p) ? `${formatMoney(rateFor(state, p)!)}/h` : ''].filter(Boolean).join(' · ')}</small>
                     </button>
                     <button className="icon-btn sm" aria-label="Flytta upp" disabled={pi === 0}
                       onClick={() => update((s) => ({ ...s, projects: moveIn(s.projects, p.id, -1, (a, b) => a.customerId === b.customerId && !b.archived) }))}>↑</button>
@@ -240,7 +266,7 @@ export function SetupView({ state, update, startAdding, sync }: {
 
               {editing?.kind === 'project' && editing.isNew && editing.draft.customerId === c.id ? (
                 <ProjectEditor
-                  initial={editing.draft} isNew inheritLabel={`Kundens (${intervalLabel(custInterval)})`}
+                  initial={editing.draft} isNew inheritLabel={`Kundens (${intervalLabel(custInterval)})`} inheritedRate={custRate}
                   onSave={saveProject} onCancel={() => setEditing(null)} onRemove={() => {}}
                 />
               ) : (
@@ -255,7 +281,7 @@ export function SetupView({ state, update, startAdding, sync }: {
         {editing?.kind === 'customer' && editing.isNew ? (
           <div className="customer" style={{ '--c': editing.draft.color } as React.CSSProperties}>
             <CustomerEditor
-              initial={editing.draft} isNew defaultLabel={defaultLabel}
+              initial={editing.draft} isNew defaultLabel={defaultLabel} inheritedRate={state.settings.hourlyRate}
               onSave={saveCustomer} onCancel={() => setEditing(null)} onRemove={() => {}}
             />
           </div>
@@ -273,6 +299,11 @@ export function SetupView({ state, update, startAdding, sync }: {
             onChange={(v) => v !== undefined && update((s) => ({ ...s, settings: { ...s.settings, defaultInterval: v } }))}
           />
         </div>
+        <RateInput
+          label="Timpris (kr/h)"
+          value={state.settings.hourlyRate}
+          onChange={(hourlyRate) => update((s) => ({ ...s, settings: { ...s.settings, hourlyRate } }))}
+        />
         <label className="field">
           <span>Arbetsdag (timmar)</span>
           <input

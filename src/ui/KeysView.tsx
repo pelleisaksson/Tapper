@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, keyboard, type State, type Tap,
+  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, keyboard, rateFor, amountFor, formatMoney,
+  type State, type Tap,
 } from '../core/model';
-import { DayHeader } from './DayHeader';
 import { useFitGrid } from './useFitGrid';
 
 interface Props {
   state: State;
   update: (fn: (s: State) => State) => void;
   date: string;
-  setDate: (d: string) => void;
+  /** Edit mode: a tap subtracts one interval. */
+  editMode: boolean;
   onSetup: () => void;
 }
 
@@ -25,8 +26,7 @@ function shade(color: string, i: number): string {
     : `color-mix(in srgb, ${color}, black ${-s}%)`;
 }
 
-export function KeysView({ state, update, date, setDate, onSetup }: Props) {
-  const [minus, setMinus] = useState(false);
+export function KeysView({ state, update, date, editMode, onSetup }: Props) {
   const [lastTap, setLastTap] = useState<Tap | null>(null);
   const [floats, setFloats] = useState<Float[]>([]);
   const undoTimer = useRef<number>();
@@ -41,7 +41,7 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
   function press(projectId: string) {
-    const r = tap(state, projectId, date, minus);
+    const r = tap(state, projectId, date, editMode);
     if (!r.tap) return;
     const t = r.tap;
     update(() => r.state);
@@ -63,8 +63,6 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
 
   return (
     <div className="keys-view">
-      <DayHeader state={state} date={date} setDate={setDate} minus={minus} setMinus={setMinus} />
-
       {groups.length === 0 ? (
         <div className="empty">
           <p>Lägg upp en kund och dess projekt för att få tangenter.</p>
@@ -73,7 +71,7 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
       ) : (
         <div
           ref={gridRef}
-          className={`mosaic ${minus ? 'minus' : ''} ${grid.rowHeight ? 'scroll' : ''}`}
+          className={`mosaic ${editMode ? 'minus' : ''} ${grid.rowHeight ? 'scroll' : ''}`}
           style={{
             gridTemplateColumns: `repeat(${grid.cols}, 1fr)`,
             gridAutoRows: grid.rowHeight ? `${grid.rowHeight}px` : '1fr',
@@ -82,11 +80,13 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
           {groups.flatMap(({ customer, projects }) =>
             projects.map((p, i) => {
               const min = minutesFor(state.taps, p.id, date);
+              const rate = rateFor(state, p);
+              const interval = (editMode ? '−' : '+') + intervalLabel(intervalFor(state, p));
               const isLast = ++index === count;
               return (
                 <button
                   key={p.id}
-                  className={`tile ${min > 0 ? 'has-time' : ''}`}
+                  className={`tile ${min > 0 ? 'has-time' : ''} ${rate ? 'has-rate' : ''}`}
                   style={{
                     '--tile': shade(customer.color, i),
                     gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
@@ -95,16 +95,26 @@ export function KeysView({ state, update, date, setDate, onSetup }: Props) {
                   aria-label={`${customer.name}, ${p.name}, ${formatHM(min)} registrerat`}
                 >
                   <span className="tile-top">
-                    <span className="tile-customer">{customer.name}</span>
-                    <span className="tile-interval">
-                      {(minus ? '−' : '+') + intervalLabel(intervalFor(state, p))}
+                    {customer.name}
+                    {rate && <span className="tile-interval"> · {interval}</span>}
+                  </span>
+                  <span className="tile-mid">
+                    <span className="tile-name">{p.name}</span>
+                    {min > 0 && (
+                      <>
+                        <span className="tile-rule" />
+                        <span className="tile-time">{formatHM(min)}</span>
+                      </>
+                    )}
+                  </span>
+                  {rate ? (
+                    <span className="tile-bottom split">
+                      <span>{formatMoney(rate)}/h</span>
+                      <span className="tile-sum">{min > 0 ? formatMoney(amountFor(min, rate)) : ''}</span>
                     </span>
-                  </span>
-                  <span className="tile-name">{p.name}</span>
-                  <span className="tile-bottom">
-                    <span className="tile-code">{p.code}</span>
-                    <span className="tile-time">{min > 0 ? formatHM(min) : ''}</span>
-                  </span>
+                  ) : (
+                    <span className="tile-bottom">{interval}</span>
+                  )}
                   {floats.filter((f) => f.projectId === p.id).map((f) => (
                     <span key={f.id} className="float">{f.text}</span>
                   ))}

@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import {
-  weekDates, isoWeek, minutesFor, dayTotal, customerMinutes, formatHM, addDays, fromISODate, type State,
+  weekDates, minutesFor, dayTotal, customerMinutes, formatHM, fromISODate, projectTotals, formatMoney, type State,
 } from '../core/model';
 import { ExportPanel } from './ExportPanel';
 
 interface Props {
   state: State;
   date: string;
-  setDate: (d: string) => void;
   openDay: (d: string) => void;
 }
 
-export function WeekView({ state, date, setDate, openDay }: Props) {
+export function WeekView({ state, date, openDay }: Props) {
   const dates = weekDates(date);
   const hasTime = (projectId: string) => dates.some((d) => minutesFor(state.taps, projectId, d) > 0);
   const groups = state.customers
@@ -25,21 +24,10 @@ export function WeekView({ state, date, setDate, openDay }: Props) {
   const weekTotal = dates.reduce((s, d) => s + dayTotal(state, d), 0);
   const cell = (m: number) => (m ? formatHM(m) : '–');
   const [exporting, setExporting] = useState(false);
+  const weekAmount = [...projectTotals(state, dates).values()].reduce((s, v) => s + v.amount, 0);
 
   return (
     <div className="week-view">
-      <header className="topbar">
-        <div className="datenav">
-          <button className="icon-btn" aria-label="Föregående vecka" onClick={() => setDate(addDays(date, -7))}>‹</button>
-          <span className="date-btn static">Vecka {isoWeek(date)}</span>
-          <button className="icon-btn" aria-label="Nästa vecka" onClick={() => setDate(addDays(date, 7))}>›</button>
-        </div>
-        <div className="header-right">
-          <button className="text-btn" onClick={() => setExporting(true)}>Exportera</button>
-          <div className="counter-box"><div className="counter">{formatHM(weekTotal)}</div></div>
-        </div>
-      </header>
-
       <div className="table-wrap">
         <table className="week">
           <thead>
@@ -91,7 +79,11 @@ export function WeekView({ state, date, setDate, openDay }: Props) {
         </table>
       </div>
 
-      {exporting && <ExportPanel state={state} date={date} onClose={() => setExporting(false)} />}
+      <div className="period-foot">
+        <span className="period-amount">{weekAmount > 0 ? formatMoney(weekAmount) : ''}</span>
+        <button className="primary" onClick={() => setExporting(true)}>Exportera</button>
+      </div>
+      {exporting && <ExportPanel state={state} date={date} period="week" onClose={() => setExporting(false)} />}
     </div>
   );
 }

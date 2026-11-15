@@ -4,7 +4,16 @@
 import { exportRows, summarize, fromISODate, type State } from './model';
 
 type Cell = string | number | { date: string } | null;
-interface Sheet { name: string; rows: Cell[][]; widths: number[]; boldFirstRow?: boolean; boldLastRow?: boolean }
+type Fmt = 'text' | 'int' | 'hours' | 'money' | 'date';
+interface Sheet {
+  name: string;
+  rows: Cell[][];
+  widths: number[];
+  /** Number format per column. */
+  formats: Fmt[];
+  boldFirstRow?: boolean;
+  boldLastRow?: boolean;
+}
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -21,7 +30,8 @@ function serial(date: string): number {
   return Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / 86400000);
 }
 
-// Style ids: 0 normal, 1 bold, 2 date, 3 hours (0.00), 4 bold hours
+// Style ids: 0 normal, 1 bold, 2 date, 3 hours (0.00), 4 bold hours, 5 money, 6 bold money
+const STYLE: Record<Fmt, [number, number]> = { text: [0, 1], int: [0, 1], date: [2, 2], hours: [3, 4], money: [5, 6] };
 function sheetXml(sheet: Sheet): string {
   const last = sheet.rows.length - 1;
   const rows = sheet.rows.map((row, r) => {
@@ -30,9 +40,8 @@ function sheetXml(sheet: Sheet): string {
       const ref = `${colName(ci)}${r + 1}`;
       if (c === null || c === '') return '';
       if (typeof c === 'number') {
-        const isHours = !Number.isInteger(c) || ci === row.length - 1;
-        const s = isHours ? (bold ? 4 : 3) : bold ? 1 : 0;
-        return `<c r="${ref}" s="${s}"><v>${c}</v></c>`;
+        const st = STYLE[sheet.formats[ci] ?? 'int'];
+        return `<c r="${ref}" s="${bold ? st[1] : st[0]}"><v>${c}</v></c>`;
       }
       if (typeof c === 'object') return `<c r="${ref}" s="2"><v>${serial(c.date)}</v></c>`;
       return `<c r="${ref}" t="inlineStr"${bold ? ' s="1"' : ''}><is><t xml:space="preserve">${esc(c)}</t></is></c>`;
@@ -54,7 +63,7 @@ function workbookFiles(sheets: Sheet[]): [string, string][] {
   const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Helvetica"/></font><font><b/><sz val="11"/><name val="Helvetica"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="2" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0 &quot;kr&quot;"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Helvetica"/></font><font><b/><sz val="11"/><name val="Helvetica"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="2" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="2" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   return [
     ['[Content_Types].xml', ct],
     ['_rels/.rels', rels],
@@ -131,35 +140,42 @@ export function zip(files: [string, string][]): Uint8Array {
 
 const hours = (min: number) => Math.round((min / 60) * 100) / 100;
 
-/** Workbook with a detail sheet (one row per project and day) and a summary sheet. */
+/** Workbook with a summary sheet (per project) followed by a detailed sheet (per project and day). */
 export function exportXLSX(state: State, dates: string[]): Uint8Array {
   const rows = exportRows(state, dates);
   const total = rows.reduce((s, r) => s + r.minutes, 0);
-  const detail: Sheet = {
-    name: 'Tid',
-    widths: [12, 24, 10, 28, 12, 10, 10],
-    boldFirstRow: true,
-    boldLastRow: true,
-    rows: [
-      ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar'],
-      ...rows.map((r): Cell[] => [
-        { date: r.date }, r.customer, r.customerCode, r.project, r.projectCode, r.minutes, hours(r.minutes),
-      ]),
-      ['Totalt', null, null, null, null, total, hours(total)],
-    ],
-  };
+  const totalAmount = rows.reduce((s, r) => s + r.amount, 0);
+  const anyRate = rows.some((r) => r.rate);
+  const money = (v: number) => (anyRate ? v : null);
+
   const summary: Sheet = {
     name: 'Summering',
-    widths: [24, 28, 10],
+    widths: [24, 28, 10, 14],
+    formats: ['text', 'text', 'hours', 'money'],
     boldFirstRow: true,
     boldLastRow: true,
     rows: [
-      ['Kund', 'Projekt', 'Timmar'],
+      ['Kund', 'Projekt', 'Timmar', 'Belopp'],
       ...summarize(rows)
         .sort((a, b) => a.customer.localeCompare(b.customer, 'sv') || a.project.localeCompare(b.project, 'sv'))
-        .map((s): Cell[] => [s.customer, s.project, hours(s.minutes)]),
-      ['Totalt', null, hours(total)],
+        .map((s): Cell[] => [s.customer, s.project, hours(s.minutes), s.amount > 0 ? s.amount : null]),
+      ['Totalt', null, hours(total), money(totalAmount)],
     ],
   };
-  return zip(workbookFiles([detail, summary]));
+  const detail: Sheet = {
+    name: 'Detaljerad redovisning',
+    widths: [12, 24, 10, 28, 12, 10, 10, 10, 14],
+    formats: ['date', 'text', 'text', 'text', 'text', 'int', 'hours', 'money', 'money'],
+    boldFirstRow: true,
+    boldLastRow: true,
+    rows: [
+      ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar', 'Timpris', 'Belopp'],
+      ...rows.map((r): Cell[] => [
+        { date: r.date }, r.customer, r.customerCode, r.project, r.projectCode, r.minutes, hours(r.minutes),
+        r.rate ?? null, r.rate ? r.amount : null,
+      ]),
+      ['Totalt', null, null, null, null, total, hours(total), null, money(totalAmount)],
+    ],
+  };
+  return zip(workbookFiles([summary, detail]));
 }
