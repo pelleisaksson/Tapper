@@ -4,7 +4,7 @@ import {
   type State, type Tap,
 } from '../core/model';
 import { useFitGrid } from './useFitGrid';
-import { readableText, tint } from '../core/color';
+import { luminance, readableText, tint } from '../core/color';
 
 interface Props {
   state: State;
@@ -84,6 +84,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
                 className={`tile ${min > 0 ? 'has-time' : ''} ${inLastRow ? 'edge-bottom' : ''}`}
                 style={{
                   '--tile': bg,
+                  '--tile-hover': tint(bg, luminance(bg) > 0.35 ? -0.1 : 0.14),
                   color: readableText(bg),
                   gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
                 } as React.CSSProperties}

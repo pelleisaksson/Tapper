@@ -680,17 +680,9 @@ button.brand { border: 0; padding: 8px 0; text-align: left; justify-self: start;
 .pin-btn { display: grid; place-items: center; }
 .pin-btn.on { color: var(--fg); }
 
-/* A light sheen sweeps across a tile under the mouse (only on devices that hover). */
-.tile::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
-  transform: translateX(-110%);
-  pointer-events: none;
-}
+/* Under the mouse the tile shifts to a nearby shade (only on devices that hover). */
 @media (hover: hover) and (pointer: fine) {
-  .tile::before { transition: transform 650ms ease-out; }
-  .tile:hover::before { transform: translateX(110%); }
-  .tile:hover { filter: brightness(1.04); }
+  .tile { transition: transform 60ms ease-out, filter 60ms ease-out, background-color 250ms ease-out; }
+  .tile:hover { background-color: var(--tile-hover, var(--tile)); }
 }
+

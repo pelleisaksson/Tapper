@@ -70,10 +70,10 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
   return (
     <header className="topbar app-header">
       <button
-        className="brand" aria-label="Slapper – till idag"
+        className="brand" aria-label="SLAPPERapp – till idag"
         onClick={() => { setDate(today); setView('day'); setCalOpen(false); }}
       >
-        Slapper
+        SLAPPERapp
       </button>
 
       <div className="center">
