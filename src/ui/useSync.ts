@@ -42,6 +42,7 @@ export function authErrorText(e: unknown): string {
 const LOCAL_DEBOUNCE = 1200;
 const REMOTE_DEBOUNCE = 300;
 const HEARTBEAT = 60_000;
+const SHOW_SYNCING_AFTER = 1000;
 
 export function useSync(
   state: State,
@@ -77,7 +78,9 @@ export function useSync(
     if (running.current) { again.current = true; return; }
     if (!navigator.onLine) { setStatus('offline'); return; }
     running.current = true;
-    setStatus('syncing');
+    // Background syncs take a fraction of a second; only show "Synkar…" if one
+    // is actually slow, so the status doesn't flicker.
+    const slow = window.setTimeout(() => setStatus('syncing'), SHOW_SYNCING_AFTER);
     // Data synced under another account must not leak into this one.
     if (metaRef.current.userId !== userId) metaRef.current = { userId, meta: emptyMeta() };
     try {
@@ -95,6 +98,7 @@ export function useSync(
       setStatus(navigator.onLine ? 'error' : 'offline');
       setError(e instanceof Error ? e.message : String(e));
     } finally {
+      window.clearTimeout(slow);
       running.current = false;
       if (again.current) { again.current = false; window.setTimeout(run, 0); }
     }

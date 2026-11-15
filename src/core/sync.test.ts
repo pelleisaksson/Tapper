@@ -167,3 +167,31 @@ test('changing settings on a synced device reaches the other device', async () =
   await a.sync();
   expect(a.state.settings).toEqual({ defaultInterval: 60, workdayMinutes: 450 });
 });
+
+/** Like Postgres jsonb: object keys come back in a different order. */
+function reorderKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(reorderKeys);
+  if (v && typeof v === 'object') {
+    const e = Object.entries(v as Record<string, unknown>).reverse();
+    return Object.fromEntries(e.map(([k, x]) => [k, reorderKeys(x)]));
+  }
+  return v;
+}
+
+test('rows echoed back with reordered keys are not treated as changes', async () => {
+  const server = new FakeServer();
+  const base = server.remote();
+  const jsonb: Remote = {
+    pull: async (since) => (await base.pull(since)).map((r) => ({ ...r, data: reorderKeys(r.data) })),
+    push: async (rows) => (await base.push(rows)).map((r) => ({ ...r, data: reorderKeys(r.data) })),
+  };
+  const a = new Device(server, seeded());
+  a.state = tap(a.state, 'p1', D).state;
+  const run = () => syncOnce(jsonb, () => a.state, (s) => (a.state = s), () => a.meta, (m) => (a.meta = m));
+  await run();
+  const before = a.state;
+  a.meta = { ...a.meta, cursor: null }; // overlapping pull returns everything again
+  const r = await run();
+  expect(r).toEqual({ pulled: 0, pushed: 0 });
+  expect(a.state).toBe(before);
+});

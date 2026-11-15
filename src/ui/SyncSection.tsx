@@ -193,11 +193,11 @@ export function SyncSection({ sync }: { sync: SyncApi }) {
           <small>
             <span className={`status-dot ${sync.status}`} />
             {STATUS_TEXT[sync.status]}
-            {sync.lastSynced && sync.status === 'synced'
+            {sync.lastSynced && (sync.status === 'synced' || sync.status === 'syncing')
               && ` · ${sync.lastSynced.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`}
           </small>
         </span>
-        <button onClick={sync.syncNow} disabled={sync.status === 'syncing'}>Synka nu</button>
+        <button onClick={sync.syncNow}>Synka nu</button>
       </div>
       {sync.status === 'error' && sync.error && <p className="error-text">{sync.error}</p>}
       <div className="editor-actions" style={{ marginTop: 12 }}>
