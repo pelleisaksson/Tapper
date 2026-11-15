@@ -41,3 +41,23 @@ export function CommentIcon() {
     </svg>
   );
 }
+
+export function FullscreenIcon({ exit }: { exit?: boolean }) {
+  return exit ? (
+    <svg {...base}>
+      <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+    </svg>
+  ) : (
+    <svg {...base}>
+      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+    </svg>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <svg {...base} strokeWidth={2.2}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
