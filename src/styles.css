@@ -240,7 +240,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .tile-customer { text-transform: uppercase; opacity: 0.8; text-align: left; }
 .tile-interval { opacity: 0.7; flex: none; }
 .tile-rate { opacity: 0.75; }
-.tile-sum { font-weight: 700; font-variant-numeric: tabular-nums; flex: none; }
+.tile-sum { font-variant-numeric: tabular-nums; flex: none; }
 
 .tile-mid {
   display: flex;
@@ -255,6 +255,10 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   letter-spacing: -0.01em;
 }
 .tile-name {
+  /* Helvetica Neue UltraLight (built in on iOS/macOS); thinnest available weight elsewhere. */
+  font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 100;
+  letter-spacing: 0.01em;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 3;
