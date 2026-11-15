@@ -254,7 +254,8 @@ export function SetupView({ state, update, startAdding, sync }: {
   return (
     <>
     <div className="setup-view">
-      {(!sync.email || sync.recovering) && sync.status !== 'off' && <SyncSection sync={sync} />}
+      {/* Sync status first, so it is visible without scrolling. */}
+      <SyncSection sync={sync} />
       <section>
         {customers.map((c, ci) => {
           const projects = state.projects.filter((p) => p.customerId === c.id && !p.archived);
@@ -356,7 +357,6 @@ export function SetupView({ state, update, startAdding, sync }: {
         </label>
       </section>
 
-      {((sync.email && !sync.recovering) || sync.status === 'off') && <SyncSection sync={sync} />}
 
       {(archivedCustomers.length > 0 || archivedProjects.length > 0) && (
         <section>

@@ -195,3 +195,43 @@ test('rows echoed back with reordered keys are not treated as changes', async ()
   expect(r).toEqual({ pulled: 0, pushed: 0 });
   expect(a.state).toBe(before);
 });
+
+/** The snapshot format used before key-order-independent comparison (plain JSON.stringify). */
+function legacySnapshot(meta: SyncMeta, state: State): SyncMeta {
+  const snapshot: Record<string, string> = {};
+  for (const k of Object.keys(meta.snapshot)) {
+    const [kind, id] = [k.slice(0, k.indexOf(':')), k.slice(k.indexOf(':') + 1)];
+    const list = kind === 'customer' ? state.customers : kind === 'project' ? state.projects : kind === 'tap' ? state.taps : null;
+    const idx = list ? list.findIndex((x) => x.id === id) : 0;
+    const data = kind === 'settings' ? state.settings : list![idx];
+    snapshot[k] = JSON.stringify([data, kind === 'customer' || kind === 'project' ? idx : 0]);
+  }
+  return { ...meta, snapshot, format: undefined } as SyncMeta;
+}
+
+test('a device with an old-format snapshot and stale data does not overwrite newer edits', async () => {
+  const server = new FakeServer();
+  const phone = new Device(server, seeded());
+  phone.state.customers[0] = { id: 'c1', name: 'Kund', color: '#000', code: 'K1' };
+  await phone.sync();
+  const ipad = new Device(server);
+  await ipad.sync();
+  // The iPad last synced with the old app version: its snapshot is in the old format.
+  ipad.meta = legacySnapshot(ipad.meta, ipad.state);
+
+  // Meanwhile the phone renames a project and changes the color.
+  phone.state = {
+    ...phone.state,
+    customers: [{ ...phone.state.customers[0], color: '#d63b7a' }],
+    projects: phone.state.projects.map((p) => (p.id === 'p1' ? { ...p, name: 'Nytt namn' } : p)),
+  };
+  await phone.sync();
+
+  // The iPad, now on the new version, syncs with its stale data.
+  await ipad.sync();
+  await phone.sync();
+  expect(ipad.state.customers[0].color).toBe('#d63b7a');
+  expect(ipad.state.projects[0].name).toBe('Nytt namn');
+  expect(phone.state.customers[0].color).toBe('#d63b7a');
+  expect(phone.state.projects[0].name).toBe('Nytt namn');
+});
