@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   addMonths, dateRangeTotal, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
-  shiftPeriod, toISODate, type Period, type State,
+  shiftPeriod, toISODate, TILE_SORTS, type Period, type State, type TileSort,
 } from '../core/model';
-import { GearIcon, PencilIcon } from './icons';
+import { GearIcon, PencilIcon, SortIcon } from './icons';
 
 export type View = Period | 'settings';
 
@@ -15,6 +15,7 @@ interface Props {
   setDate: (d: string) => void;
   editMode: boolean;
   setEditMode: (m: boolean) => void;
+  setTileSort: (s: TileSort) => void;
   syncProblem: 'error' | 'offline' | null;
 }
 
@@ -22,7 +23,9 @@ interface Props {
  * Brand on the left, ‹ date + counter › centered, edit and settings icons on the right.
  * The centered date opens the calendar in the day view and returns to the day view elsewhere.
  */
-export function AppHeader({ state, view, setView, date, setDate, editMode, setEditMode, syncProblem }: Props) {
+export function AppHeader({ state, view, setView, date, setDate, editMode, setEditMode, setTileSort, syncProblem }: Props) {
+  const [sortOpen, setSortOpen] = useState(false);
+  const tileSort = state.settings.tileSort ?? 'custom';
   const [calOpen, setCalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(date);
   const today = toISODate(new Date());
@@ -78,6 +81,14 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
       <div className="actions">
         {view === 'day' && (
           <button
+            className={`icon-btn tool ${sortOpen ? 'on' : ''}`} aria-label="Sortera" aria-expanded={sortOpen}
+            onClick={() => setSortOpen((o) => !o)}
+          >
+            <SortIcon />
+          </button>
+        )}
+        {view === 'day' && (
+          <button
             className={`icon-btn tool ${editMode ? 'on' : ''}`} aria-pressed={editMode}
             aria-label="Redigera (tryck drar av tid)" onClick={() => setEditMode(!editMode)}
           >
@@ -92,6 +103,24 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
           {syncProblem && <span className={`nav-dot ${syncProblem}`} aria-label={syncProblem === 'error' ? 'Synkfel' : 'Offline'} />}
         </button>
       </div>
+
+      {sortOpen && (
+        <>
+          <div className="cal-backdrop clear" onClick={() => setSortOpen(false)} />
+          <div className="menu" role="menu" aria-label="Sortera rutorna">
+            <div className="menu-title">Sortera</div>
+            {TILE_SORTS.map((o) => (
+              <button
+                key={o.value} role="menuitemradio" aria-checked={tileSort === o.value}
+                className={tileSort === o.value ? 'on' : ''}
+                onClick={() => { setTileSort(o.value); setSortOpen(false); }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {calOpen && (
         <>

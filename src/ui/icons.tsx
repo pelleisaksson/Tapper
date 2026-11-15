@@ -22,3 +22,12 @@ export function GearIcon() {
     </svg>
   );
 }
+
+export function SortIcon() {
+  return (
+    <svg {...base}>
+      <path d="M7 4v16M3.5 16.5 7 20l3.5-3.5" />
+      <path d="M13 6h8M13 11h6M13 16h4" />
+    </svg>
+  );
+}
