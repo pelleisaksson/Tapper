@@ -611,12 +611,11 @@ table.summary { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: 
   padding-top: env(safe-area-inset-top);
 }
 .mosaic { padding-bottom: 0; }
-/* Bottom row reaches the rounded screen corners: keep its text clear of the
-   home indicator and the curve. */
+/* Bottom row reaches the screen edge: lift its text clear of the home indicator.
+   Side margins stay the same as the other tiles (at this height the rounded
+   corners don't reach the text). */
 .tile.edge-bottom {
   padding-bottom: max(10px, calc(env(safe-area-inset-bottom) - 6px));
-  padding-left: calc(12px + env(safe-area-inset-bottom) * 0.3);
-  padding-right: calc(12px + env(safe-area-inset-bottom) * 0.3);
 }
 .undo-toast { bottom: calc(20px + env(safe-area-inset-bottom)); }
 .sheet { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
