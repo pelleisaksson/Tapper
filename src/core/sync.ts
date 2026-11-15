@@ -40,7 +40,18 @@ export const emptyMeta = (): SyncMeta => ({ snapshot: {}, cursor: null });
 
 const SETTINGS_ID = 'settings';
 export const keyOf = (r: { kind: Kind; id: string }) => `${r.kind}:${r.id}`;
-const content = (r: Row) => JSON.stringify([r.data, r.sort]);
+/** JSON with sorted object keys: the database (jsonb) does not keep key order. */
+function stable(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const entries = Object.entries(v as Record<string, unknown>)
+      .filter(([, x]) => x !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, x]) => `${JSON.stringify(k)}:${stable(x)}`).join(',')}}`;
+  }
+  return JSON.stringify(v ?? null);
+}
+const content = (r: Row) => stable([r.data, r.sort]);
 
 export function rowsOf(state: State): Map<string, Row> {
   const m = new Map<string, Row>();
