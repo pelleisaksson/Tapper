@@ -4,11 +4,21 @@ import type { Remote, Row } from '../core/sync';
 const URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
+/**
+ * True when the app was opened from a password reset link. Read before the
+ * client consumes the URL, since its PASSWORD_RECOVERY event fires too early
+ * for React to catch.
+ */
+export const openedFromRecoveryLink =
+  typeof window !== 'undefined' && /[#&?]type=recovery\b/.test(window.location.hash + window.location.search);
+
 /** null when the app is built without Supabase config – it then runs local-only. */
 export const supabase: SupabaseClient | null =
   URL && KEY
     ? createClient(URL, KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
+        // Implicit flow: links in emails (confirm, reset password) work even when
+        // opened in another browser than the one that asked for them.
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' },
       })
     : null;
 

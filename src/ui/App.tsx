@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toISODate } from '../core/model';
 import { useStore } from './useStore';
 import { useSync } from './useSync';
@@ -14,6 +14,9 @@ export function App() {
   const [tab, setTab] = useState<Tab>('keys');
   const [date, setDate] = useState(() => toISODate(new Date()));
   const [setupAdding, setSetupAdding] = useState(false);
+
+  // Opening a password reset link: go straight to where the new password is set.
+  useEffect(() => { if (sync.recovering) setTab('setup'); }, [sync.recovering]);
 
   const go = (t: Tab) => { setSetupAdding(false); setTab(t); };
 

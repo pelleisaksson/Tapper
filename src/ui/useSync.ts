@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { emptyState, type State } from '../core/model';
 import { emptyMeta, syncOnce } from '../core/sync';
 import { loadMeta, saveMeta } from '../core/storage';
-import { supabase, supabaseRemote } from '../sync/supabase';
+import { openedFromRecoveryLink, supabase, supabaseRemote } from '../sync/supabase';
 
 export type SyncStatus = 'off' | 'signed-out' | 'syncing' | 'synced' | 'offline' | 'error';
 
@@ -13,9 +13,30 @@ export interface SyncApi {
   lastSynced: Date | null;
   error: string | null;
   syncNow: () => void;
+  /** True after opening a password-reset link: the user should pick a new password. */
+  recovering: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  /** Returns true if the account is ready, false if the email must be confirmed first. */
+  signUp: (email: string, password: string) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<void>;
+  setNewPassword: (password: string) => Promise<void>;
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
+}
+
+/** Supabase error messages in Swedish for the cases users actually hit. */
+export function authErrorText(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  const m = msg.toLowerCase();
+  if (m.includes('invalid login credentials')) return 'Fel e-post eller lösenord.';
+  if (m.includes('email not confirmed')) return 'E-postadressen är inte bekräftad än. Klicka på länken i mejlet från Supabase och försök igen.';
+  if (m.includes('already registered')) return 'Det finns redan ett konto med den e-posten. Logga in istället.';
+  if (m.includes('password should be')) return 'Lösenordet är för kort. Använd minst 6 tecken.';
+  if (m.includes('rate limit') || m.includes('security purposes')) return 'För många försök. Vänta en stund och försök igen.';
+  if (m.includes('token has expired') || m.includes('invalid')) return 'Koden eller länken är ogiltig eller för gammal.';
+  if (m.includes('failed to fetch')) return 'Ingen kontakt med servern. Kontrollera nätet.';
+  return msg;
 }
 
 const LOCAL_DEBOUNCE = 1200;
@@ -31,6 +52,7 @@ export function useSync(
   const [status, setStatus] = useState<SyncStatus>(supabase ? 'signed-out' : 'off');
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recovering, setRecovering] = useState(openedFromRecoveryLink);
 
   const metaRef = useRef(loadMeta());
   const running = useRef(false);
@@ -41,7 +63,10 @@ export function useSync(
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -115,14 +140,42 @@ export function useSync(
   }, [state, userId, schedule]);
 
   // ---- Auth actions ----
+  const redirectTo = window.location.origin + window.location.pathname;
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string) => {
+    if (!supabase) return false;
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
+    if (error) throw error;
+    return !!data.session;
+  }, [redirectTo]);
+
+  const resetPassword = useCallback(async (email: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  }, [redirectTo]);
+
+  const setNewPassword = useCallback(async (password: string) => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    setRecovering(false);
+  }, []);
+
   const sendCode = useCallback(async (email: string) => {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
     });
     if (error) throw error;
-  }, []);
+  }, [redirectTo]);
 
   const verifyCode = useCallback(async (email: string, code: string) => {
     if (!supabase) return;
@@ -144,6 +197,6 @@ export function useSync(
   return {
     status, error, lastSynced,
     email: session?.user.email ?? null,
-    syncNow: run, sendCode, verifyCode, signOut,
+    recovering, syncNow: run, signIn, signUp, resetPassword, setNewPassword, sendCode, verifyCode, signOut,
   };
 }

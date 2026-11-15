@@ -18,7 +18,7 @@ eller en dag, på vald dag.
 - **Minusläge och Ångra** för att rätta fel.
 - **Veckovy** med summor per kund och projekt.
 - **Export** till Excel (.xlsx) eller CSV för valfritt datumintervall.
-- **Synk mellan enheter** via Supabase, med inloggning med e-postkod. Appen
+- **Synk mellan enheter** via Supabase, med inloggning med e-post och lösenord. Appen
   fungerar offline och synkar när nätet är tillbaka. Ändringar syns på andra
   enheter i realtid.
 - **Fungerar offline.** Kan installeras på hemskärmen som PWA.

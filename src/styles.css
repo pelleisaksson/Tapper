@@ -485,3 +485,5 @@ h2 {
 }
 .nav-dot.error { background: var(--danger); }
 .setup-view section > .field + .field { margin-top: 20px; }
+.info-text { font-size: 13px; margin: 8px 0 0; }
+.auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
