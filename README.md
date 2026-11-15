@@ -18,6 +18,8 @@ eller en dag, på vald dag.
   tid i mitten och, om timpris finns, timpris och summa nederst.
 - **Sortering** av plattorna: egen ordning, mest använda (antal tryck senaste
   90 dagarna), kund A–Ö eller projekt A–Ö.
+- **Fästa projekt** (nålen under Inställningar) visas överst oavsett
+  sortering, inbördes A–Ö.
 - **Sidhuvud** med räknare. Tryck på datumet för kalendern, och därifrån för
   vyerna Vecka, Månad och År. Pennan slår på redigering, där ett tryck drar av
   tid. Kugghjulet öppnar inställningarna.

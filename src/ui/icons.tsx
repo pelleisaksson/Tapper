@@ -61,3 +61,12 @@ export function CheckIcon() {
     </svg>
   );
 }
+
+export function PinIcon({ filled }: { filled?: boolean }) {
+  return (
+    <svg {...base} width={18} height={18} fill={filled ? 'currentColor' : 'none'}>
+      <path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5z" />
+      <path d="M12 13v7.5" fill="none" />
+    </svg>
+  );
+}

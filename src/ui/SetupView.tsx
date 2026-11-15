@@ -6,6 +6,7 @@ import {
 import type { SyncApi } from './useSync';
 import { SyncSection } from './SyncSection';
 import { ColorPicker } from './ColorPicker';
+import { PinIcon } from './icons';
 import { parseASE } from '../core/ase';
 
 type Update = (fn: (s: State) => State) => void;
@@ -292,6 +293,14 @@ export function SetupView({ state, update, startAdding, sync }: {
                     <button className="row-main" onClick={() => setEditing({ kind: 'project', isNew: false, draft: p })}>
                       <span>{p.name}</span>
                       <small>{[p.code, intervalLabel(intervalFor(state, p)), rateFor(state, p) ? `${formatMoney(rateFor(state, p)!)}/h` : ''].filter(Boolean).join(' · ')}</small>
+                    </button>
+                    <button
+                      className={`icon-btn sm pin-btn ${p.pinned ? 'on' : ''}`} aria-pressed={!!p.pinned}
+                      aria-label={p.pinned ? `Lossa ${p.name}` : `Fäst ${p.name} överst`}
+                      title={p.pinned ? 'Fäst överst – tryck för att lossa' : 'Fäst överst'}
+                      onClick={() => update((s) => ({ ...s, projects: s.projects.map((x) => (x.id === p.id ? { ...x, pinned: !x.pinned || undefined } : x)) }))}
+                    >
+                      <PinIcon filled={!!p.pinned} />
                     </button>
                     <button className="icon-btn sm" aria-label="Flytta upp" disabled={pi === 0}
                       onClick={() => update((s) => ({ ...s, projects: moveIn(s.projects, p.id, -1, (a, b) => a.customerId === b.customerId && !b.archived) }))}>↑</button>

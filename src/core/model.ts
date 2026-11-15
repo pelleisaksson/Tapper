@@ -30,6 +30,8 @@ export interface Project {
   interval?: Interval;
   /** Hourly rate (SEK); overrides customer and global rate. */
   rate?: number;
+  /** Pinned projects are shown first, whatever the sort. */
+  pinned?: boolean;
   archived?: boolean;
 }
 
@@ -444,10 +446,20 @@ const USAGE_DAYS = 90;
  * Ties keep the custom order.
  */
 export function tileOrder(state: State, sort: TileSort = 'custom', today = toISODate(new Date())): TileItem[] {
-  const items: TileItem[] = keyboard(state).flatMap(({ customer, projects }) =>
+  const all: TileItem[] = keyboard(state).flatMap(({ customer, projects }) =>
     projects.map((project, shade) => ({ customer, project, shade })),
   );
   const az = (a: string, b: string) => a.localeCompare(b, 'sv', { sensitivity: 'base' });
+  // Pinned projects first, A–Ö by project name; the rest in the chosen order.
+  const pinned = all
+    .filter((t) => t.project.pinned)
+    .sort((a, b) => az(a.project.name, b.project.name) || az(a.customer.name, b.customer.name));
+  return [...pinned, ...sortTiles(state, all.filter((t) => !t.project.pinned), sort, today, az)];
+}
+
+function sortTiles(
+  state: State, items: TileItem[], sort: TileSort, today: string, az: (a: string, b: string) => number,
+): TileItem[] {
   if (sort === 'customer') {
     return [...items].sort((a, b) => az(a.customer.name, b.customer.name) || az(a.project.name, b.project.name));
   }
