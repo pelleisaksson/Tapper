@@ -22,14 +22,27 @@ export async function checkForUpdate(): Promise<void> {
       const reg = await navigator.serviceWorker?.getRegistration();
       await reg?.update().catch(() => {});
       window.location.reload();
+      // Keep sync waiting while the page reloads.
+      await new Promise(() => {});
     }
   } catch {
     /* offline: try again next time */
   }
 }
 
+let firstCheck: Promise<void> = Promise.resolve();
+
+/**
+ * Resolves once the first update check is done. Sync waits for it, so code that
+ * is about to be replaced by a newer version never gets to sync.
+ */
+export function updateChecked(): Promise<void> {
+  // Never hold sync back for long (e.g. a slow network).
+  return Promise.race([firstCheck, new Promise<void>((r) => setTimeout(r, 4000))]);
+}
+
 export function watchForUpdates(): void {
-  checkForUpdate();
+  firstCheck = checkForUpdate();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') checkForUpdate();
   });
