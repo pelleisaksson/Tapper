@@ -621,3 +621,4 @@ table.summary { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: 
 .undo-toast { bottom: calc(20px + env(safe-area-inset-bottom)); }
 .sheet { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 .mosaic.scroll { padding-bottom: env(safe-area-inset-bottom); }
+.version { font-size: 11px; color: var(--muted); text-align: center; margin: 24px 0 0; font-variant-numeric: tabular-nums; }

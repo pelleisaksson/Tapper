@@ -378,6 +378,9 @@ export function SetupView({ state, update, startAdding, sync }: {
           ))}
         </section>
       )}
+      <p className="version">
+        Version {__APP_BUILD__} · {new Date(__APP_BUILT_AT__).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' })}
+      </p>
     </div>
     </>
   );
