@@ -16,6 +16,7 @@ export function loadState(): State {
       customers: s.customers ?? [],
       projects: s.projects ?? [],
       taps: s.taps ?? [],
+      notes: s.notes ?? [],
       settings: { ...DEFAULT_SETTINGS, ...s.settings },
     };
   } catch {

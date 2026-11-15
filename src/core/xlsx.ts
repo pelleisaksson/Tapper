@@ -164,17 +164,17 @@ export function exportXLSX(state: State, dates: string[]): Uint8Array {
   };
   const detail: Sheet = {
     name: 'Detaljerad redovisning',
-    widths: [12, 24, 10, 28, 12, 10, 10, 10, 14],
-    formats: ['date', 'text', 'text', 'text', 'text', 'int', 'hours', 'money', 'money'],
+    widths: [12, 24, 10, 28, 12, 10, 10, 10, 14, 50],
+    formats: ['date', 'text', 'text', 'text', 'text', 'int', 'hours', 'money', 'money', 'text'],
     boldFirstRow: true,
     boldLastRow: true,
     rows: [
-      ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar', 'Timpris', 'Belopp'],
+      ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar', 'Timpris', 'Belopp', 'Kommentar'],
       ...rows.map((r): Cell[] => [
         { date: r.date }, r.customer, r.customerCode, r.project, r.projectCode, r.minutes, hours(r.minutes),
-        r.rate ?? null, r.rate ? r.amount : null,
+        r.rate ?? null, r.rate ? r.amount : null, r.comment || null,
       ]),
-      ['Totalt', null, null, null, null, total, hours(total), null, money(totalAmount)],
+      ['Totalt', null, null, null, null, total, hours(total), null, money(totalAmount), null],
     ],
   };
   return zip(workbookFiles([summary, detail]));

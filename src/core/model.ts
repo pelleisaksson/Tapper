@@ -63,10 +63,20 @@ export const TILE_SORTS: { value: TileSort; label: string }[] = [
   { value: 'project', label: 'Projekt' },
 ];
 
+/** Free-text comment on what was done: one per project and day. */
+export interface Note {
+  /** `${projectId}|${date}`, so two devices editing the same day share one row. */
+  id: string;
+  projectId: string;
+  date: string;
+  text: string;
+}
+
 export interface State {
   customers: Customer[];
   projects: Project[];
   taps: Tap[];
+  notes: Note[];
   settings: Settings;
 }
 
@@ -81,7 +91,7 @@ export function paletteOf(state: State): string[] {
 }
 
 export function emptyState(): State {
-  return { customers: [], projects: [], taps: [], settings: { ...DEFAULT_SETTINGS } };
+  return { customers: [], projects: [], taps: [], notes: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
 export function newId(): string {
@@ -228,6 +238,28 @@ export function isoWeek(date: string): number {
 
 // ---------- Formatting & export ----------
 
+/** 90 -> "1 h 30 min", 60 -> "1 h", 45 -> "45 min", 0 -> "0 min" */
+export function formatDuration(minutes: number): string {
+  const m = Math.round(Math.abs(minutes));
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (!h) return `${r} min`;
+  return r ? `${h} h ${r} min` : `${h} h`;
+}
+
+export const noteId = (projectId: string, date: string) => `${projectId}|${date}`;
+
+export function noteFor(state: State, projectId: string, date: string): string {
+  return state.notes.find((n) => n.projectId === projectId && n.date === date)?.text ?? '';
+}
+
+/** Set the comment for a project and day; empty text removes it. */
+export function setNote(state: State, projectId: string, date: string, text: string): State {
+  const id = noteId(projectId, date);
+  const rest = state.notes.filter((n) => n.id !== id);
+  return { ...state, notes: text.trim() ? [...rest, { id, projectId, date, text }] : rest };
+}
+
 /** 90 -> "1:30" */
 export function formatHM(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -257,6 +289,7 @@ export interface ExportRow {
   minutes: number;
   rate?: number;
   amount: number;
+  comment: string;
 }
 
 /** One row per project and day with registered time, in date and list order. */
@@ -269,7 +302,7 @@ export function exportRows(state: State, dates: string[]): ExportRow[] {
       const c = customerOf(state, p);
       const rate = rateFor(state, p);
       rows.push({
-        date, minutes, rate, amount: amountFor(minutes, rate),
+        date, minutes, rate, amount: amountFor(minutes, rate), comment: noteFor(state, p.id, date).trim(),
         customer: c?.name ?? '', customerCode: c?.code ?? '',
         project: p.name, projectCode: p.code ?? '',
       });
@@ -291,7 +324,7 @@ export function summarize(rows: ExportRow[]): { customer: string; project: strin
   return [...map.values()];
 }
 
-export const EXPORT_HEADERS = ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar', 'Timpris', 'Belopp'];
+export const EXPORT_HEADERS = ['Datum', 'Kund', 'Kundnr', 'Projekt', 'Projektkod', 'Minuter', 'Timmar', 'Timpris', 'Belopp', 'Kommentar'];
 
 /** Semicolon-separated CSV (opens correctly in Swedish Excel). */
 export function exportCSV(state: State, dates: string[]): string {
@@ -299,11 +332,11 @@ export function exportCSV(state: State, dates: string[]): string {
   for (const r of exportRows(state, dates)) {
     rows.push([
       r.date, r.customer, r.customerCode, r.project, r.projectCode, String(r.minutes), formatHours(r.minutes),
-      r.rate ? String(r.rate) : '', r.rate ? String(r.amount) : '',
+      r.rate ? String(r.rate) : '', r.rate ? String(r.amount) : '', r.comment,
     ]);
   }
   return rows
-    .map((r) => r.map((c) => (/[";\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(';'))
+    .map((r) => r.map((c) => (/[";\n\r]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(';'))
     .join('\n');
 }
 

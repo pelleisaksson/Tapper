@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatHM, tileOrder, rateFor, amountFor, formatMoney,
+  tap, removeTap, minutesFor, intervalFor, intervalLabel, formatDuration, tileOrder, rateFor, amountFor, formatMoney,
   type State, type Tap,
 } from '../core/model';
 import { useFitGrid } from './useFitGrid';
@@ -43,7 +43,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
     setLastTap(t);
     window.clearTimeout(undoTimer.current);
     undoTimer.current = window.setTimeout(() => setLastTap(null), 4000);
-    const f: Float = { id: t.id, projectId, text: (t.minutes > 0 ? '+' : '−') + formatHM(Math.abs(t.minutes)) };
+    const f: Float = { id: t.id, projectId, text: (t.minutes > 0 ? '+' : '−') + formatDuration(t.minutes) };
     setFloats((fs) => [...fs, f]);
     window.setTimeout(() => setFloats((fs) => fs.filter((x) => x.id !== f.id)), 700);
   }
@@ -88,7 +88,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
                   gridColumn: isLast && lastSpan > 1 ? `span ${lastSpan}` : undefined,
                 } as React.CSSProperties}
                 onClick={() => press(p.id)}
-                aria-label={`${customer.name}, ${p.name}, ${formatHM(min)} registrerat`}
+                aria-label={`${customer.name}, ${p.name}, ${formatDuration(min)} registrerat`}
               >
                 <span className="tile-row tile-top">
                   <span className="tile-customer">{customer.name}</span>
@@ -102,7 +102,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
                   {min > 0 && (
                     <>
                       <span className="tile-rule" />
-                      <span className="tile-time">{formatHM(min)}</span>
+                      <span className="tile-time">{formatDuration(min)}</span>
                     </>
                   )}
                 </span>
@@ -125,7 +125,7 @@ export function KeysView({ state, update, date, editMode, onSetup }: Props) {
 
       {lastTap && (
         <button className="undo-toast" onClick={undo}>
-          Ångra {lastTap.minutes > 0 ? '+' : '−'}{formatHM(Math.abs(lastTap.minutes))}
+          Ångra {lastTap.minutes > 0 ? '+' : '−'}{formatDuration(lastTap.minutes)}
         </button>
       )}
     </div>

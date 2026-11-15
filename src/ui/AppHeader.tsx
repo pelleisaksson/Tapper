@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  addMonths, dateRangeTotal, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
+  addMonths, dateRangeTotal, formatDuration, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
   shiftPeriod, toISODate, TILE_SORTS, type Period, type State, type TileSort,
 } from '../core/model';
-import { GearIcon, PlusMinusIcon, SortIcon } from './icons';
+import { CommentIcon, GearIcon, PlusMinusIcon, SortIcon } from './icons';
+import { NotesPanel } from './NotesPanel';
 
 export type View = Period | 'settings';
 
@@ -16,6 +17,7 @@ interface Props {
   editMode: boolean;
   setEditMode: (m: boolean) => void;
   setTileSort: (s: TileSort) => void;
+  update: (fn: (s: State) => State) => void;
   syncProblem: 'error' | 'offline' | null;
 }
 
@@ -23,7 +25,8 @@ interface Props {
  * Brand on the left, ‹ date + counter › centered, edit and settings icons on the right.
  * The centered date opens the calendar in the day view and returns to the day view elsewhere.
  */
-export function AppHeader({ state, view, setView, date, setDate, editMode, setEditMode, setTileSort, syncProblem }: Props) {
+export function AppHeader({ state, view, setView, date, setDate, editMode, setEditMode, setTileSort, update, syncProblem }: Props) {
+  const [notesOpen, setNotesOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const tileSort = state.settings.tileSort ?? 'custom';
   const [calOpen, setCalOpen] = useState(false);
@@ -64,7 +67,12 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
 
   return (
     <header className="topbar app-header">
-      <div className="brand">Slapper</div>
+      <button
+        className="brand" aria-label="Slapper – till idag"
+        onClick={() => { setDate(today); setView('day'); setCalOpen(false); }}
+      >
+        Slapper
+      </button>
 
       <div className="center">
         <button className="icon-btn" aria-label="Föregående" onClick={() => setDate(shiftPeriod(period, date, -1))}>‹</button>
@@ -73,7 +81,7 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
           aria-label={view === 'day' ? 'Välj dag i kalender' : 'Till dagsvyn'}
         >
           <span className="center-label">{label}</span>
-          <span className={`counter ${pulse ? 'pulse' : ''}`} aria-live="polite">{formatHM(total)}</span>
+          <span className={`counter ${pulse ? 'pulse' : ''}`} aria-live="polite">{formatDuration(total)}</span>
         </button>
         <button className="icon-btn" aria-label="Nästa" onClick={() => setDate(shiftPeriod(period, date, 1))}>›</button>
       </div>
@@ -95,6 +103,14 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
             <PlusMinusIcon />
           </button>
         )}
+        {view === 'day' && (
+          <button
+            className={`icon-btn tool ${notesOpen ? 'on' : ''}`} aria-label="Kommentarer för dagen"
+            aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)}
+          >
+            <CommentIcon />
+          </button>
+        )}
         <button
           className={`icon-btn tool ${view === 'settings' ? 'on' : ''}`} aria-label="Inställningar"
           aria-pressed={view === 'settings'} onClick={() => setView(view === 'settings' ? 'day' : 'settings')}
@@ -103,6 +119,10 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
           {syncProblem && <span className={`nav-dot ${syncProblem}`} aria-label={syncProblem === 'error' ? 'Synkfel' : 'Offline'} />}
         </button>
       </div>
+
+      {notesOpen && view === 'day' && (
+        <NotesPanel state={state} update={update} date={date} onClose={() => setNotesOpen(false)} />
+      )}
 
       {sortOpen && (
         <>

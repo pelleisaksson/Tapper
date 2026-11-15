@@ -1,7 +1,7 @@
 import {
   emptyState, tap, minutesFor, dayTotal, removeTap, weekDates, isoWeek,
   formatHM, formatHours, exportCSV, intervalLabel, intervalFor, keyboard, monthWeeks, addMonths, datesBetween, rateFor, amountFor, formatMoney, projectTotals,
-  periodRange, shiftPeriod, periodLabel, tileOrder, type TileSort, type State,
+  periodRange, shiftPeriod, periodLabel, tileOrder, formatDuration, setNote, noteFor, type TileSort, type State,
 } from './model';
 
 function stateWith(...intervals: (number | 'day' | undefined)[]): State {
@@ -98,7 +98,7 @@ test('CSV export', () => {
   s.projects[0].code = 'P-1';
   s = tap(s, 'a0', D).state;
   expect(exportCSV(s, [D])).toBe(
-    'Datum;Kund;Kundnr;Projekt;Projektkod;Minuter;Timmar;Timpris;Belopp\n2026-11-16;Kund AB;K1;Projekt 0;P-1;30;0,5;;',
+    'Datum;Kund;Kundnr;Projekt;Projektkod;Minuter;Timmar;Timpris;Belopp;Kommentar\n2026-11-16;Kund AB;K1;Projekt 0;P-1;30;0,5;;;',
   );
 });
 
@@ -135,7 +135,7 @@ test('CSV and totals include rate and amount', () => {
   s.settings.hourlyRate = 1000;
   s = tap(s, 'a0', D).state;
   s = tap(s, 'a0', '2026-11-17').state;
-  expect(exportCSV(s, [D]).split('\n')[1]).toBe('2026-11-16;Kund AB;K1;Projekt 0;;30;0,5;1000;500');
+  expect(exportCSV(s, [D]).split('\n')[1]).toBe('2026-11-16;Kund AB;K1;Projekt 0;;30;0,5;1000;500;');
   expect(projectTotals(s, weekDates(D)).get('a0')).toEqual({ minutes: 60, amount: 1000 });
 });
 
@@ -169,4 +169,25 @@ test('tile order: custom, most used, customer A–Ö, project A–Ö', () => {
   expect(ids('used')).toEqual(['p3', 'p2', 'p1']);
   // shade follows the custom position within the customer, whatever the order
   expect(tileOrder(s, 'project', D).find((t) => t.project.id === 'p2')!.shade).toBe(1);
+});
+
+test('duration format', () => {
+  expect(formatDuration(0)).toBe('0 min');
+  expect(formatDuration(45)).toBe('45 min');
+  expect(formatDuration(60)).toBe('1 h');
+  expect(formatDuration(90)).toBe('1 h 30 min');
+  expect(formatDuration(480)).toBe('8 h');
+});
+
+test('comments are one per project and day and exported as a column', () => {
+  let s = stateWith(30);
+  s = tap(s, 'a0', D).state;
+  s = setNote(s, 'a0', D, 'Första');
+  s = setNote(s, 'a0', D, 'Skrev rapport; "utkast"');
+  expect(s.notes).toHaveLength(1);
+  expect(noteFor(s, 'a0', D)).toBe('Skrev rapport; "utkast"');
+  const csv = exportCSV(s, [D]).split('\n');
+  expect(csv[0].endsWith(';Kommentar')).toBe(true);
+  expect(csv[1].endsWith(';"Skrev rapport; ""utkast"""')).toBe(true);
+  expect(setNote(s, 'a0', D, '   ').notes).toHaveLength(0);
 });

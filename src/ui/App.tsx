@@ -29,7 +29,7 @@ export function App() {
     <div className="app">
       <AppHeader
         state={state} view={view} setView={go} date={date} setDate={setDate}
-        editMode={editMode} setEditMode={setEditMode}
+        editMode={editMode} setEditMode={setEditMode} update={update}
         setTileSort={(tileSort) => update((s) => ({ ...s, settings: { ...s.settings, tileSort } }))}
         syncProblem={sync.status === 'error' || sync.status === 'offline' ? sync.status : null}
       />

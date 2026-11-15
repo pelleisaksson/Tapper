@@ -4,7 +4,7 @@
 
 create table if not exists public.items (
   user_id    uuid        not null default auth.uid() references auth.users on delete cascade,
-  kind       text        not null check (kind in ('customer', 'project', 'tap', 'settings')),
+  kind       text        not null check (kind in ('customer', 'project', 'tap', 'note', 'settings')),
   id         text        not null,
   data       jsonb,
   sort       integer     not null default 0,
