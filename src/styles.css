@@ -250,15 +250,13 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   min-height: 0;
   /* Name and time share one size that scales with the tile. */
   font-size: clamp(16px, 13cqmin, 40px);
-  font-weight: 700;
+  /* Helvetica Neue Light (built in on iOS/macOS) for project name and time. */
+  font-family: 'HelveticaNeue-Light', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
 .tile-name {
-  /* Helvetica Neue UltraLight (built in on iOS/macOS); thinnest available weight elsewhere. */
-  font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-weight: 100;
-  letter-spacing: 0.01em;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -272,7 +270,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   opacity: 0.55;
   margin: 0.3em 0;
 }
-.tile-time { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.tile-time { font-variant-numeric: tabular-nums; }
 
 @media (min-width: 700px) {
   .tile { padding: 14px 16px; }
