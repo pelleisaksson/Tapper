@@ -272,3 +272,47 @@ test('if the server rejects comments, everything else is still committed and com
   expect(dirtyRows(a.state, a.meta)).toEqual([]);
   expect(server.rows.has('note:' + noteId('p1', D))).toBe(true);
 });
+
+test('rows of a kind this app version does not know are left alone, never deleted', async () => {
+  // Like an older app version meeting comments for the first time.
+  const server = new FakeServer();
+  const a = new Device(server, seeded());
+  await a.sync();
+  server.rows.set('future:x1', { kind: 'future' as Row['kind'], id: 'x1', data: { text: 'hej' }, sort: 0, deleted: false, updated_at: String(++server.t).padStart(8, '0') });
+  await a.sync();
+  await a.sync();
+  expect(server.rows.get('future:x1')!.deleted).toBe(false);
+  expect(server.rows.get('future:x1')!.data).toEqual({ text: 'hej' });
+  expect(dirtyRows(a.state, a.meta)).toEqual([]);
+});
+
+test('a deletion keeps the last content on the server so it can be recovered', async () => {
+  const server = new FakeServer();
+  const a = new Device(server, seeded());
+  a.state = setNote(a.state, 'p1', D, 'Viktig text');
+  await a.sync();
+  a.state = setNote(a.state, 'p1', D, '');
+  await a.sync();
+  const row = server.rows.get('note:' + noteId('p1', D))!;
+  expect(row.deleted).toBe(true);
+  expect((row.data as { text: string }).text).toBe('Viktig text');
+});
+
+test('the same comment edited on two devices keeps both texts', async () => {
+  const server = new FakeServer();
+  const phone = new Device(server, seeded());
+  await phone.sync();
+  const ipad = new Device(server);
+  await ipad.sync();
+  phone.state = setNote(phone.state, 'p1', D, 'Skrev på telefonen');
+  await phone.sync();
+  // The iPad hasn't pulled yet and writes in the same field.
+  ipad.state = setNote(ipad.state, 'p1', D, 'Skrev på iPaden');
+  await ipad.sync();
+  await phone.sync();
+  for (const d of [phone, ipad]) {
+    const text = noteFor(d.state, 'p1', D);
+    expect(text).toContain('Skrev på telefonen');
+    expect(text).toContain('Skrev på iPaden');
+  }
+});

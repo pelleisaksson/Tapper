@@ -4,6 +4,7 @@ import { emptyState, type State } from '../core/model';
 import { emptyMeta, syncOnce } from '../core/sync';
 import { loadMeta, saveMeta } from '../core/storage';
 import { openedFromRecoveryLink, supabase, supabaseRemote } from '../sync/supabase';
+import { updateChecked } from '../update';
 
 export type SyncStatus = 'off' | 'signed-out' | 'syncing' | 'synced' | 'offline' | 'error';
 
@@ -78,6 +79,8 @@ export function useSync(
     if (running.current) { again.current = true; return; }
     if (!navigator.onLine) { setStatus('offline'); return; }
     running.current = true;
+    // Let a pending update reload the page before this (possibly old) code syncs.
+    await updateChecked();
     // Background syncs take a fraction of a second; only show "Synkar…" if one
     // is actually slow, so the status doesn't flicker.
     const slow = window.setTimeout(() => setStatus('syncing'), SHOW_SYNCING_AFTER);

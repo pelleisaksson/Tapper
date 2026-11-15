@@ -12,6 +12,13 @@ import { DEFAULT_SETTINGS, type Customer, type Note, type Project, type Settings
 
 export type Kind = 'customer' | 'project' | 'tap' | 'note' | 'settings';
 
+/**
+ * Kinds this app version understands. Rows of any other kind (written by a newer
+ * version) are never applied, committed or deleted: an older app must not be able
+ * to wipe data it doesn't know about.
+ */
+const KNOWN_KINDS = new Set<string>(['customer', 'project', 'tap', 'note', 'settings']);
+
 export interface Row {
   kind: Kind;
   id: string;
@@ -100,10 +107,17 @@ export function dirtyRows(state: State, meta: SyncMeta): Row[] {
   const out: Row[] = [];
   const current = rowsOf(state);
   for (const [k, r] of current) if (meta.snapshot[k] !== content(r)) out.push(r);
-  for (const k of Object.keys(meta.snapshot)) {
+  for (const [k, v] of Object.entries(meta.snapshot)) {
     if (current.has(k)) continue;
     const i = k.indexOf(':');
-    out.push({ kind: k.slice(0, i) as Kind, id: k.slice(i + 1), data: null, sort: 0, deleted: true });
+    const kind = k.slice(0, i);
+    if (!KNOWN_KINDS.has(kind)) continue;
+    // Keep the last content in the tombstone so a mistaken delete can be recovered.
+    let data: unknown = null;
+    try {
+      data = (JSON.parse(v) as [unknown, number])[0];
+    } catch { /* keep null */ }
+    out.push({ kind: kind as Kind, id: k.slice(i + 1), data, sort: 0, deleted: true });
   }
   return out;
 }
@@ -116,8 +130,8 @@ function sortedBy<T extends { id: string }>(items: Map<string, { v: T; sort: num
  * Apply server rows to the state, skipping rows that are dirty locally.
  * Returns the new state and the remote rows that were actually applied.
  */
-export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { state: State; applied: Row[] } {
-  if (remote.length === 0) return { state, applied: [] };
+export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { state: State; applied: Row[]; merged: number } {
+  if (remote.length === 0) return { state, applied: [], merged: 0 };
   const protect = new Set(dirtyRows(state, meta).map(keyOf));
   // Settings is a single row with a fixed id. On a device that has never
   // synced it, the local value is just the defaults, not a real edit: adopt
@@ -135,8 +149,27 @@ export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { stat
   let settings: Settings = state.settings;
   const applied: Row[] = [];
 
+  let merged = 0;
+
   for (const [k, r] of latest) {
-    if (protect.has(k)) continue;
+    if (!KNOWN_KINDS.has(r.kind)) continue;
+    if (protect.has(k)) {
+      // A comment edited here and, since the last sync, also on another device:
+      // keep both texts rather than letting one overwrite the other.
+      if (r.kind === 'note' && !r.deleted && meta.snapshot[k] !== content(r)) {
+        const theirs = r.data as Note;
+        const mine = notes.get(r.id);
+        if (!mine) {
+          notes.set(r.id, theirs);
+          merged++;
+        } else if (!mine.text.includes(theirs.text.trim())) {
+          const text = theirs.text.includes(mine.text.trim()) ? theirs.text : `${theirs.text.trimEnd()}\n${mine.text.trimStart()}`;
+          notes.set(r.id, { ...mine, text });
+          merged++;
+        }
+      }
+      continue;
+    }
     // Already agreed (e.g. overlapping pull or our own push echoed back).
     if (r.deleted ? !(k in meta.snapshot) : meta.snapshot[k] === content(r)) continue;
     applied.push(r);
@@ -165,6 +198,7 @@ export function applyRemote(state: State, remote: Row[], meta: SyncMeta): { stat
 
   return {
     applied,
+    merged,
     state: {
       customers: sortedBy(customers),
       projects: sortedBy(projects),
@@ -208,7 +242,7 @@ export async function syncOnce(
   // 1. Pull and apply.
   const pulled = await remote.pull(getMeta().cursor);
   const r = applyRemote(getState(), pulled, getMeta());
-  if (r.applied.length) setState(r.state);
+  if (r.applied.length || r.merged) setState(r.state);
   // Cursor advances past everything pulled, even rows skipped as locally dirty.
   const afterPull = commit(getMeta(), r.applied);
   for (const p of pulled) if (p.updated_at && (!afterPull.cursor || p.updated_at > afterPull.cursor)) afterPull.cursor = p.updated_at;
