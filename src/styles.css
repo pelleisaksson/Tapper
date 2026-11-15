@@ -27,6 +27,8 @@
 * { box-sizing: border-box; }
 
 html, body, #root { height: 100%; }
+/* Fill the whole screen, also behind the home indicator in a home-screen app. */
+@supports (height: 100dvh) { html, body, #root { height: 100dvh; } }
 
 body {
   margin: 0;
@@ -87,7 +89,9 @@ input:focus { border-bottom-color: var(--fg); }
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  /* Top inset is padded by the header (so its background runs up under the status
+     bar); the bottom is left to each view so the mosaic can reach the screen edge. */
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 .topbar {
@@ -143,8 +147,11 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 /* ---------- Day header: counter and calendar ---------- */
 
 .counter {
-  font-size: 24px;
-  line-height: 1.05;
+  font-size: 19px;
+  line-height: 1.1;
+  font-family: 'HelveticaNeue-Light', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  letter-spacing: 0;
   transition: transform 120ms ease-out;
 }
 .counter.pulse { transform: scale(1.08); }
@@ -249,7 +256,10 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   justify-content: center;
   min-height: 0;
   /* Name and time share one size that scales with the tile. */
-  font-size: clamp(16px, 13cqmin, 40px);
+  /* Scales with the tile, and shrinks further so the longest word fits on one line
+     (Helvetica averages ~0.55em per character). */
+  --longest: 7;
+  font-size: max(12px, min(clamp(16px, 13cqmin, 40px), calc(100cqw / (var(--longest) * 0.6))));
   /* Helvetica Neue Light (built in on iOS/macOS) for project name and time. */
   font-family: 'HelveticaNeue-Light', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: 300;
@@ -348,7 +358,7 @@ table.week {
 .setup-view {
   flex: 1;
   overflow-y: auto;
-  padding: 8px var(--pad) 32px;
+  padding: 8px var(--pad) calc(32px + env(safe-area-inset-bottom));
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
@@ -491,13 +501,12 @@ h2 {
 
 /* ---------- Period views ---------- */
 
-main { padding-bottom: env(safe-area-inset-bottom); }
 .period-foot {
   flex: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px var(--pad) 12px;
+  padding: 10px var(--pad) calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
 }
 .period-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -594,3 +603,21 @@ table.summary { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: 
 .brightness::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 1px solid #000; }
 .hex-input { font-variant-numeric: tabular-nums; text-transform: lowercase; letter-spacing: 0.04em; }
 .color-preview { height: 36px; display: grid; place-items: center; font-weight: 700; }
+
+/* ---------- Edge to edge on phones ---------- */
+
+.app-header {
+  height: calc(60px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+}
+.mosaic { padding-bottom: 0; }
+/* Bottom row reaches the rounded screen corners: keep its text clear of the
+   home indicator and the curve. */
+.tile.edge-bottom {
+  padding-bottom: max(10px, calc(env(safe-area-inset-bottom) - 6px));
+  padding-left: calc(12px + env(safe-area-inset-bottom) * 0.3);
+  padding-right: calc(12px + env(safe-area-inset-bottom) * 0.3);
+}
+.undo-toast { bottom: calc(20px + env(safe-area-inset-bottom)); }
+.sheet { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.mosaic.scroll { padding-bottom: env(safe-area-inset-bottom); }

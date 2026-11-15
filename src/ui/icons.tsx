@@ -5,11 +5,12 @@ const base = {
   strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true,
 };
 
-export function PencilIcon() {
+/** ± : add / subtract time. */
+export function PlusMinusIcon() {
   return (
     <svg {...base}>
-      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17l-1 3z" />
-      <path d="M14.5 7.5l2 2" />
+      <path d="M12 4v9M7.5 8.5h9" />
+      <path d="M7.5 18.5h9" />
     </svg>
   );
 }
