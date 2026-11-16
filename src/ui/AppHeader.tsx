@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  addMonths, dateRangeTotal, formatDuration, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
+  addMonths, dateRangeTotal, datesBetween, formatDuration, formatMoney, projectTotals, rateFor, formatHM, fromISODate, isoWeek, monthWeeks, dayTotal, periodLabel, periodRange,
   shiftPeriod, toISODate, TILE_SORTS, type Period, type State, type TileSort,
 } from '../core/model';
 import { CommentIcon, FullscreenIcon, GearIcon, PlusMinusIcon, SortIcon } from './icons';
@@ -37,6 +37,11 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
   const period: Period = view === 'settings' ? 'day' : view;
   const range = periodRange(period, date);
   const total = dateRangeTotal(state, range.from, range.to);
+  // Amount for the period, shown only once some project has an hourly rate.
+  const hasRates = state.projects.some((p) => !p.archived && rateFor(state, p));
+  const amount = hasRates
+    ? [...projectTotals(state, datesBetween(range.from, range.to)).values()].reduce((s, v) => s + v.amount, 0)
+    : 0;
 
   // Brief pulse on the counter whenever the total changes.
   const [pulse, setPulse] = useState(false);
@@ -68,7 +73,7 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
   }
 
   return (
-    <header className="topbar app-header">
+    <header className={`topbar app-header ${hasRates ? 'has-amount' : ''}`}>
       <button
         className="brand" aria-label="TimeTapir – till idag"
         onClick={() => { setDate(today); setView('day'); setCalOpen(false); }}
@@ -84,7 +89,10 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
           aria-label={view === 'day' ? 'Välj dag i kalender' : 'Till dagsvyn'}
         >
           <span className="center-label">{label}</span>
-          <span className={`counter ${pulse ? 'pulse' : ''}`} aria-live="polite">{formatDuration(total)}</span>
+          <span className={`counter ${pulse ? 'pulse' : ''}`} aria-live="polite">
+            {formatDuration(total)}
+            {hasRates && <span className="counter-amount">{formatMoney(amount)}</span>}
+          </span>
         </button>
         <button className="icon-btn" aria-label="Nästa" onClick={() => setDate(shiftPeriod(period, date, 1))}>›</button>
       </div>
