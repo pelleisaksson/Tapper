@@ -10,6 +10,8 @@ export type SyncStatus = 'off' | 'signed-out' | 'syncing' | 'synced' | 'offline'
 
 export interface SyncApi {
   status: SyncStatus;
+  /** False until the stored session has been read at startup. */
+  ready: boolean;
   email: string | null;
   lastSynced: Date | null;
   error: string | null;
@@ -51,6 +53,7 @@ export function useSync(
   update: (fn: (s: State) => State) => void,
 ): SyncApi {
   const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(!supabase);
   const [status, setStatus] = useState<SyncStatus>(supabase ? 'signed-out' : 'off');
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function useSync(
   // ---- Session ----
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
     const { data } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === 'PASSWORD_RECOVERY') setRecovering(true);
@@ -202,7 +205,7 @@ export function useSync(
   }, [run, update]);
 
   return {
-    status, error, lastSynced,
+    status, ready, error, lastSynced,
     email: session?.user.email ?? null,
     recovering, syncNow: run, signIn, signUp, resetPassword, setNewPassword, sendCode, verifyCode, signOut,
   };

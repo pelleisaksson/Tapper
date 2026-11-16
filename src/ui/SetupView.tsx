@@ -184,8 +184,8 @@ function PaletteField({ palette, isCustom, onChange }: {
   );
 }
 
-export function SetupView({ state, update, startAdding, sync }: {
-  state: State; update: Update; startAdding?: boolean; sync: SyncApi;
+export function SetupView({ state, update, startAdding, sync, authMode }: {
+  state: State; update: Update; startAdding?: boolean; sync: SyncApi; authMode?: 'signin' | 'signup';
 }) {
   const palette = paletteOf(state);
   const newCustomer = (): Editing => ({
@@ -256,7 +256,7 @@ export function SetupView({ state, update, startAdding, sync }: {
     <>
     <div className="setup-view">
       {/* Sync status first, so it is visible without scrolling. */}
-      <SyncSection sync={sync} />
+      <SyncSection key={authMode ?? 'signin'} sync={sync} initialMode={authMode} />
       <section>
         {customers.map((c, ci) => {
           const projects = state.projects.filter((p) => p.customerId === c.id && !p.archived);

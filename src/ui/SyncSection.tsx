@@ -12,8 +12,8 @@ const STATUS_TEXT: Record<SyncApi['status'], string> = {
 
 type Mode = 'signin' | 'signup' | 'reset' | 'code' | 'code-verify';
 
-export function SyncSection({ sync }: { sync: SyncApi }) {
-  const [mode, setMode] = useState<Mode>('signin');
+export function SyncSection({ sync, initialMode = 'signin' }: { sync: SyncApi; initialMode?: 'signin' | 'signup' }) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
