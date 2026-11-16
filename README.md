@@ -1,4 +1,4 @@
-# Tapper (SLAPPERapp)
+# TimeTapir
 
 Tidsrapportering med tangenter. Varje projekt är en färgad platta i en mosaik.
 Ett tryck lägger till ett debiteringsintervall, till exempel 15 min, 30 min, 1 h

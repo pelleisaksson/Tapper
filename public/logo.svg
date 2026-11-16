@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs><clipPath id="c"><circle cx="50" cy="50" r="48"/></clipPath></defs>
+  <circle cx="50" cy="50" r="48" fill="#1c1c1c"/>
+  <g clip-path="url(#c)">
+    <!-- clock face: hour ticks -->
+    <g stroke="#fff" stroke-linecap="round">
+      <g stroke-width="3.2">
+        <line x1="50" y1="6" x2="50" y2="13"/><line x1="94" y1="50" x2="87" y2="50"/>
+        <line x1="50" y1="94" x2="50" y2="87"/><line x1="6" y1="50" x2="13" y2="50"/>
+      </g>
+      <g stroke-width="2">
+        <line x1="72" y1="11.9" x2="70" y2="15.4"/><line x1="88.1" y1="28" x2="84.6" y2="30"/>
+        <line x1="88.1" y1="72" x2="84.6" y2="70"/><line x1="72" y1="88.1" x2="70" y2="84.6"/>
+        <line x1="28" y1="88.1" x2="30" y2="84.6"/><line x1="11.9" y1="72" x2="15.4" y2="70"/>
+        <line x1="11.9" y1="28" x2="15.4" y2="30"/><line x1="28" y1="11.9" x2="30" y2="15.4"/>
+      </g>
+      <!-- hands at one o'clock -->
+      <line x1="50" y1="50" x2="50" y2="17" stroke-width="3"/>
+      <line x1="50" y1="50" x2="65" y2="25" stroke-width="4.5"/>
+    </g>
+    <!-- tapir head, facing right, with a dark outline that separates it from the clock -->
+    <path fill="#fff" stroke="#1c1c1c" stroke-width="3" stroke-linejoin="round"
+      d="M-4 41 C8 39 15 37 21 36
+         C18 28 20 20 27 18 C34 16 40 21 40 30
+         C48 31 56 35 63 41
+         C70 47 76 56 79 65
+         C81 71 80 77 76 79
+         C72 80 69 77 69 73
+         C68 70 66 69 63 71
+         C57 74 50 77 42 78
+         C30 79 16 83 -4 91 Z"/>
+    <path d="M25 27 C27 23 33 23 34 28" fill="none" stroke="#1c1c1c" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="50" cy="44" rx="2" ry="1.6" fill="#1c1c1c"/>
+  </g>
+</svg>

@@ -1,5 +1,5 @@
 // Offline support: network-first for navigation, cache-first for assets.
-const CACHE = 'tapper-v3';
+const CACHE = 'tapper-v4';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {

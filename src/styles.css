@@ -686,3 +686,13 @@ button.brand { border: 0; padding: 8px 0; text-align: left; justify-self: start;
   .tile:hover { background-color: var(--tile-hover, var(--tile)); }
 }
 
+
+/* ---------- Brand logo ---------- */
+
+button.brand { display: inline-flex; align-items: center; gap: 8px; }
+.brand-logo { width: 26px; height: 26px; flex: none; display: block; }
+@media (prefers-color-scheme: dark) { .brand-logo { filter: invert(1); } }
+@media (max-width: 520px) {
+  .brand-logo { width: 24px; height: 24px; }
+  button.brand { gap: 6px; }
+}

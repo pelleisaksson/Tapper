@@ -70,10 +70,11 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
   return (
     <header className="topbar app-header">
       <button
-        className="brand" aria-label="SLAPPERapp – till idag"
+        className="brand" aria-label="TimeTapir – till idag"
         onClick={() => { setDate(today); setView('day'); setCalOpen(false); }}
       >
-        SLAPPERapp
+        <img className="brand-logo" src="./logo.svg" alt="" width={26} height={26} />
+        <span className="brand-name">TimeTapir</span>
       </button>
 
       <div className="center">
