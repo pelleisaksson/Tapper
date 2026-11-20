@@ -16,8 +16,8 @@ eller en dag, på vald dag.
   Intervallet "Dag" motsvarar en arbetsdag, vars längd ställs in.
 - **Plattorna** visar kund och intervall överst, projektnamn och registrerad
   tid i mitten och, om timpris finns, timpris och summa nederst.
-- **Sortering** av plattorna: egen ordning, mest använda (antal tryck senaste
-  90 dagarna), kund A–Ö eller projekt A–Ö.
+- **Sortering** av plattorna: egen ordning, mest använda (mest registrerad
+  tid totalt, alla dagar), kund A–Ö eller projekt A–Ö.
 - **Fästa projekt** (nålen under Inställningar) visas överst oavsett
   sortering, inbördes A–Ö.
 - **Sidhuvud** med räknare. Tryck på datumet för kalendern, och därifrån för

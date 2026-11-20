@@ -226,6 +226,8 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   padding: 10px 12px;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  /* One column that never grows past the tile, whatever the text inside. */
+  grid-template-columns: minmax(0, 1fr);
   text-align: center;
   overflow: hidden;
   container-type: size;
@@ -257,9 +259,9 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   min-height: 0;
   /* Name and time share one size that scales with the tile. */
   /* Scales with the tile, and shrinks further so the longest word fits on one line
-     (Helvetica averages ~0.55em per character). */
+     (0.7em per character leaves room for wide letters in Helvetica Neue Light). */
   --longest: 7;
-  font-size: max(12px, min(clamp(16px, 13cqmin, 40px), calc(100cqw / (var(--longest) * 0.6))));
+  font-size: max(11px, min(clamp(16px, 13cqmin, 40px), calc(100cqw / (var(--longest) * 0.7))));
   /* Helvetica Neue Light (built in on iOS/macOS) for project name and time. */
   font-family: 'HelveticaNeue-Light', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: 300;
@@ -751,3 +753,6 @@ button.brand { display: inline-flex; align-items: center; gap: 8px; }
 .import-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .import-list small { color: var(--muted); white-space: nowrap; }
 .import-warnings { margin: 0; padding-left: 18px; color: var(--danger); font-size: 13px; }
+
+/* Grid and flex children may shrink below their text width (then ellipsis). */
+.tile > *, .tile-row > * { min-width: 0; }
