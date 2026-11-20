@@ -744,3 +744,12 @@ button.brand { display: inline-flex; align-items: center; gap: 8px; }
   .app-header.has-amount .counter { font-size: 15px; }
   .app-header.has-amount .counter-amount { margin-left: 0.45em; font-size: 0.8em; }
 }
+
+/* ---------- Import ---------- */
+
+.import-preview { margin-top: 16px; padding: 14px; border: 1px solid var(--line); background: var(--soft); display: flex; flex-direction: column; gap: 10px; }
+.import-preview p { margin: 0; font-size: 14px; }
+.import-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.import-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.import-list small { color: var(--muted); white-space: nowrap; }
+.import-warnings { margin: 0; padding-left: 18px; color: var(--danger); font-size: 13px; }
