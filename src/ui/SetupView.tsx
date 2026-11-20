@@ -6,6 +6,7 @@ import {
 import type { SyncApi } from './useSync';
 import { SyncSection } from './SyncSection';
 import { ColorPicker } from './ColorPicker';
+import { ImportSection } from './ImportSection';
 import { PinIcon } from './icons';
 import { parseASE } from '../core/ase';
 
@@ -335,6 +336,8 @@ export function SetupView({ state, update, startAdding, sync, authMode }: {
           <button className="primary block" onClick={() => setEditing(newCustomer())}>+ Ny kund</button>
         )}
       </section>
+
+      <ImportSection state={state} update={update} palette={palette} />
 
       <section>
         <h2>Inställningar</h2>

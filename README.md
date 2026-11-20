@@ -1,4 +1,4 @@
-# TimeTapir
+# Slira
 
 Tidsrapportering med tangenter. Varje projekt är en färgad platta i en mosaik.
 Ett tryck lägger till ett debiteringsintervall, till exempel 15 min, 30 min, 1 h
@@ -28,6 +28,10 @@ eller en dag, på vald dag.
   ett fritextfält per projekt för vad som gjordes. Kommentarerna följer med i
   exporten.
 - **Tid** visas som "1 h 30 min" på plattorna och i sidhuvudet.
+- **Import** av kunder och projekt från Excel (.xlsx) eller CSV under
+  Inställningar, med förhandsvisning. Kolumner: Kund, Projekt och valfritt
+  Kundnr, Projektkod, Timpris, Intervall. Befintliga kunder och projekt
+  dubbleras inte. En mall finns att ladda ner.
 - **Export** till Excel (.xlsx med summering och detaljerad redovisning) eller
   CSV för valfritt datumintervall, med timmar, timpris och belopp.
 - **Synk mellan enheter** via Supabase, med inloggning med e-post och lösenord.

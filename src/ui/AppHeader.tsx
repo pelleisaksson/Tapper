@@ -75,11 +75,11 @@ export function AppHeader({ state, view, setView, date, setDate, editMode, setEd
   return (
     <header className={`topbar app-header ${hasRates ? 'has-amount' : ''}`}>
       <button
-        className="brand" aria-label="TimeTapir – till idag"
+        className="brand" aria-label="Slira – till idag"
         onClick={() => { setDate(today); setView('day'); setCalOpen(false); }}
       >
         <img className="brand-logo" src="./logo.svg" alt="" width={26} height={26} />
-        <span className="brand-name">TimeTapir</span>
+        <span className="brand-name">Slira</span>
       </button>
 
       <div className="center">
