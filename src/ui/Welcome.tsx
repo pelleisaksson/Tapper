@@ -3,7 +3,7 @@ interface Props {
   onSignin: () => void;
 }
 
-/** Start screen when signed out: the tapir between "create account" and "sign in". */
+/** Start screen when signed out: the logo between "create account" and "sign in". */
 export function Welcome({ onSignup, onSignin }: Props) {
   return (
     <div className="welcome">

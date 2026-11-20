@@ -1,25 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="8 11 84 84">
-  <!-- tapir, front view -->
-  <g fill="#1c1c1c">
-    <!-- ears -->
-    <path d="M38 30 C30 33 20 31 17 24 C15 18 20 14 27 15 C34 16 40 20 43 26 Z"/>
-    <path d="M62 30 C70 33 80 31 83 24 C85 18 80 14 73 15 C66 16 60 20 57 26 Z"/>
-    <!-- head and trunk -->
-    <path d="M39 23 C45 20.5 55 20.5 61 23
-             C64 29 65 37 67 45
-             C68.5 51 66 56 61.5 60
-             C58.5 63 57 66 56.5 71
-             C56 77 56.5 83 55.5 87.5
-             C54.5 91 45.5 91 44.5 87.5
-             C43.5 83 44 77 43.5 71
-             C43 66 41.5 63 38.5 60
-             C34 56 31.5 51 33 45
-             C35 37 36 29 39 23 Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Swedish-style warning sign: slippery road -->
+  <path d="M50 8 L94 88 H6 Z" fill="#d52b1e" stroke="#d52b1e" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M50 24 L82 82 H18 Z" fill="#fdd200" stroke="#fdd200" stroke-width="5" stroke-linejoin="round"/>
+  <g transform="translate(50 62) scale(1.15) translate(-50 -62)">
+  <g fill="#1a1a1a">
+    <!-- car seen from behind -->
+    <path d="M42.5 45.5 C43 44 44 43.5 45.5 43.5 H54.5 C56 43.5 57 44 57.5 45.5 L59.5 51 H40.5 Z"/>
+    <rect x="37" y="50.5" width="26" height="9" rx="2.5"/>
+    <rect x="38.5" y="58.5" width="5" height="4.5" rx="1"/>
+    <rect x="56.5" y="58.5" width="5" height="4.5" rx="1"/>
   </g>
-  <!-- soft light on the trunk -->
-  <path d="M48 66 C49.3 65 50.7 65 52 66 C52.6 73 52.3 80 51.6 85 C50.6 85.8 49.4 85.8 48.4 85 C47.7 80 47.4 73 48 66 Z" fill="#fff" opacity="0.06"/>
-  <!-- eyes -->
-  <g fill="none" stroke="#fff" stroke-width="1.6">
-    <circle cx="42.5" cy="46" r="2.7"/><circle cx="57.5" cy="46" r="2.7"/>
+  <path d="M43.5 47 H56.5 L57.8 50.3 H42.2 Z" fill="#fdd200" opacity="0.85"/>
+  <!-- skid tracks -->
+  <g fill="none" stroke="#1a1a1a" stroke-width="2.9" stroke-linecap="round">
+    <path d="M41 65 C37 69 45 72 40.5 76 C37 79 42 81 39.5 83"/>
+    <path d="M59 65 C55 69 63 72 58.5 76 C55 79 60 81 57.5 83"/>
+  </g>
   </g>
 </svg>
