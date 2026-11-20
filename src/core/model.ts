@@ -435,17 +435,15 @@ export interface TileItem {
   shade: number;
 }
 
-const USAGE_DAYS = 90;
-
 /**
  * Active tiles in the chosen order:
  * - custom: customers and projects in the order set in the settings
- * - used: most taps in the last 90 days first
+ * - used: most registered time in total (all days) first
  * - customer: customers A–Ö, their projects A–Ö
  * - project: all projects A–Ö
  * Ties keep the custom order.
  */
-export function tileOrder(state: State, sort: TileSort = 'custom', today = toISODate(new Date())): TileItem[] {
+export function tileOrder(state: State, sort: TileSort = 'custom'): TileItem[] {
   const all: TileItem[] = keyboard(state).flatMap(({ customer, projects }) =>
     projects.map((project, shade) => ({ customer, project, shade })),
   );
@@ -454,11 +452,11 @@ export function tileOrder(state: State, sort: TileSort = 'custom', today = toISO
   const pinned = all
     .filter((t) => t.project.pinned)
     .sort((a, b) => az(a.project.name, b.project.name) || az(a.customer.name, b.customer.name));
-  return [...pinned, ...sortTiles(state, all.filter((t) => !t.project.pinned), sort, today, az)];
+  return [...pinned, ...sortTiles(state, all.filter((t) => !t.project.pinned), sort, az)];
 }
 
 function sortTiles(
-  state: State, items: TileItem[], sort: TileSort, today: string, az: (a: string, b: string) => number,
+  state: State, items: TileItem[], sort: TileSort, az: (a: string, b: string) => number,
 ): TileItem[] {
   if (sort === 'customer') {
     return [...items].sort((a, b) => az(a.customer.name, b.customer.name) || az(a.project.name, b.project.name));
@@ -467,12 +465,11 @@ function sortTiles(
     return [...items].sort((a, b) => az(a.project.name, b.project.name) || az(a.customer.name, b.customer.name));
   }
   if (sort === 'used') {
-    const since = addDays(today, -USAGE_DAYS);
-    const count = new Map<string, number>();
-    for (const t of state.taps) {
-      if (t.minutes > 0 && t.date > since && t.date <= today) count.set(t.projectId, (count.get(t.projectId) ?? 0) + 1);
-    }
-    return [...items].sort((a, b) => (count.get(b.project.id) ?? 0) - (count.get(a.project.id) ?? 0));
+    // Total registered minutes over all days; corrections (minus taps) count against it.
+    const total = new Map<string, number>();
+    for (const t of state.taps) total.set(t.projectId, (total.get(t.projectId) ?? 0) + t.minutes);
+    const used = (id: string) => Math.max(0, total.get(id) ?? 0);
+    return [...items].sort((a, b) => used(b.project.id) - used(a.project.id));
   }
   return items;
 }

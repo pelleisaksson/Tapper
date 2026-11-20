@@ -158,17 +158,17 @@ test('tile order: custom, most used, customer A–Ö, project A–Ö', () => {
     { id: 'p2', customerId: 'c1', name: 'Beta' },
     { id: 'p3', customerId: 'c2', name: 'Gamma' },
   ];
-  const ids = (sort: TileSort) => tileOrder(s, sort, D).map((t) => t.project.id);
+  const ids = (sort: TileSort) => tileOrder(s, sort).map((t) => t.project.id);
   expect(ids('custom')).toEqual(['p1', 'p2', 'p3']);
   expect(ids('customer')).toEqual(['p3', 'p2', 'p1']);
   expect(ids('project')).toEqual(['p2', 'p3', 'p1']);
   s = tap(s, 'p3', D).state;
   s = tap(s, 'p3', D).state;
   s = tap(s, 'p2', D).state;
-  s = tap(s, 'p1', '2026-01-01').state; // older than 90 days: not counted
-  expect(ids('used')).toEqual(['p3', 'p2', 'p1']);
+  s = tap(s, 'p1', '2026-01-01').state; // an old day counts just as much
+  expect(ids('used')).toEqual(['p3', 'p1', 'p2']); // p1 and p2 tie on 15 min: custom order
   // shade follows the custom position within the customer, whatever the order
-  expect(tileOrder(s, 'project', D).find((t) => t.project.id === 'p2')!.shade).toBe(1);
+  expect(tileOrder(s, 'project').find((t) => t.project.id === 'p2')!.shade).toBe(1);
 });
 
 test('duration format', () => {
@@ -202,8 +202,22 @@ test('pinned projects come first, A–Ö, whatever the sort', () => {
     { id: 'p4', customerId: 'c1', name: 'Bravo', pinned: true },
   ];
   for (const sort of ['custom', 'used', 'customer', 'project'] as TileSort[]) {
-    expect(tileOrder(s, sort, D).slice(0, 2).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie']);
+    expect(tileOrder(s, sort).slice(0, 2).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie']);
   }
-  expect(tileOrder(s, 'custom', D).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Delta', 'Alfa']);
-  expect(tileOrder(s, 'project', D).map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Alfa', 'Delta']);
+  expect(tileOrder(s, 'custom').map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Delta', 'Alfa']);
+  expect(tileOrder(s, 'project').map((t) => t.project.name)).toEqual(['Bravo', 'Charlie', 'Alfa', 'Delta']);
+});
+
+test('most used: total time over all days, minus taps subtract', () => {
+  let s = emptyState();
+  s.customers = [{ id: 'c', name: 'K', color: '#000' }];
+  s.projects = [{ id: 'a', customerId: 'c', name: 'A' }, { id: 'b', customerId: 'c', name: 'B', interval: 60 }];
+  // A: four 15-minute taps spread over many days (60 min). B: one 1-hour tap, then one more today.
+  for (const d of ['2025-03-01', '2025-09-10', '2026-02-02', '2026-11-01']) s = tap(s, 'a', d).state;
+  s = tap(s, 'b', '2026-11-20').state;
+  s = tap(s, 'b', '2026-11-20').state;
+  expect(tileOrder(s, 'used').map((t) => t.project.id)).toEqual(['b', 'a']);
+  s = tap(s, 'b', '2026-11-20', true).state; // correction: B down to 60 min
+  s = tap(s, 'b', '2026-11-20', true).state; // B down to 0
+  expect(tileOrder(s, 'used').map((t) => t.project.id)).toEqual(['a', 'b']);
 });
