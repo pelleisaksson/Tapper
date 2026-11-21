@@ -49,7 +49,7 @@ npm run build    # produktionsbygge till dist/
 
 ## Komma igång med synk och publicering
 
-Följ guiden **[docs/SETUP.md](docs/SETUP.md)**. Den visar steg för steg vad du
+Följ guiden **[docs/SETUP.md](docs/SETUP.md)**. Den beskriver privat repo med GitHub Pro, domänen slira.app hos Loopia, Supabase Pro med säkerhetskopior och inloggningsmejl via Resend. Den visar steg för steg vad du
 ska klicka på i Supabase och GitHub. Utan Supabase fungerar appen ändå, men
 bara lokalt.
 
