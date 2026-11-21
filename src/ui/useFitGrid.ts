@@ -1,46 +1,69 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
-export interface FitGrid { cols: number; rowHeight: number | null }
-
-const MIN_ROW = 76;
 const GAP = 2;
 
+/** Smallest tile size; below this the tiles go onto another page instead. */
+export function minTile(width: number): { w: number; h: number } {
+  return width >= 700 ? { w: 170, h: 150 } : { w: 125, h: 115 };
+}
+
 /**
- * Pick a column count so `n` tiles fill the container as evenly as possible
- * (tiles close to square, few empty cells). If tiles would get shorter than
- * MIN_ROW the grid falls back to fixed-height rows and scrolls.
+ * Column count so `n` tiles fill a w×h area as evenly as possible (close to
+ * square, few empty cells), never narrower or shorter than the minimum size.
+ * Returns null if `n` tiles cannot fit at the minimum size.
  */
-export function bestGrid(n: number, w: number, h: number): FitGrid {
-  if (n <= 0 || w <= 0 || h <= 0) return { cols: 1, rowHeight: null };
-  const maxCols = Math.max(1, Math.floor(w / 110));
-  let best = { cols: 1, score: -Infinity, fits: false };
+export function bestGrid(n: number, w: number, h: number, min = minTile(w)): number | null {
+  if (n <= 0 || w <= 0 || h <= 0) return 1;
+  const maxCols = Math.max(1, Math.floor((w + GAP) / (min.w + GAP)));
+  let best: { cols: number; score: number } | null = null;
   for (let c = 1; c <= Math.min(n, maxCols); c++) {
     const rows = Math.ceil(n / c);
     const tw = (w - GAP * (c - 1)) / c;
     const th = (h - GAP * (rows - 1)) / rows;
-    const fits = th >= MIN_ROW;
+    if (th < min.h) continue;
     const aspect = Math.min(tw, th) / Math.max(tw, th); // 1 = square
     const empty = c * rows - n;
-    const score = (fits ? 1000 : 0) + aspect * 10 - empty * 1.5 + Math.min(tw, th) / 100;
-    if (score > best.score) best = { cols: c, score, fits };
+    const score = aspect * 10 - empty * 1.5 + Math.min(tw, th) / 100;
+    if (!best || score > best.score) best = { cols: c, score };
   }
-  return { cols: best.cols, rowHeight: best.fits ? null : MIN_ROW + 30 };
+  return best?.cols ?? null;
 }
 
-export function useFitGrid<T extends HTMLElement>(n: number) {
+/** A page of tiles. `rows` is set when there are several pages: every page then has the same grid. */
+export interface Page { start: number; count: number; cols: number; rows?: number }
+
+/**
+ * Split `n` tiles into pages, like an iPhone home screen. If everything fits
+ * on one page, the best-fitting grid fills the screen. Otherwise every page uses
+ * the same, densest grid that keeps the minimum tile size, so tiles look the
+ * same on all pages and the last page is only partly filled.
+ */
+export function pageLayout(n: number, w: number, h: number): Page[] {
+  if (n <= 0 || w <= 0 || h <= 0) return [{ start: 0, count: Math.max(0, n), cols: 2 }];
+  const min = minTile(w);
+  const cols = Math.max(1, Math.floor((w + GAP) / (min.w + GAP)));
+  const rows = Math.max(1, Math.floor((h + GAP) / (min.h + GAP)));
+  const perPage = cols * rows;
+  if (n <= perPage) return [{ start: 0, count: n, cols: bestGrid(n, w, h, min) ?? cols }];
+  const pages: Page[] = [];
+  for (let start = 0; start < n; start += perPage) {
+    pages.push({ start, count: Math.min(perPage, n - start), cols, rows });
+  }
+  return pages;
+}
+
+/** Measures the element and lays out `n` tiles in pages. */
+export function usePages<T extends HTMLElement>(n: number) {
   const ref = useRef<T>(null);
-  const [grid, setGrid] = useState<FitGrid>({ cols: 2, rowHeight: null });
+  const [size, setSize] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => {
-      const g = bestGrid(n, el.clientWidth, el.clientHeight);
-      setGrid((old) => (old.cols === g.cols && old.rowHeight === g.rowHeight ? old : g));
-    };
+    const measure = () => setSize((s) => (s.w === el.clientWidth && s.h === el.clientHeight ? s : { w: el.clientWidth, h: el.clientHeight }));
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [n]);
-  return [ref, grid] as const;
+  }, [n > 0]);
+  return [ref, pageLayout(n, size.w, size.h), size] as const;
 }
