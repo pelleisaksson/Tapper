@@ -1,8 +1,9 @@
 # Slira: privat kod, egen domän och inloggning med kod
 
 Den här guiden tar Slira från `pelleisaksson.github.io/Tapper` till
-**https://slira.app**, gör koden privat, slår på dagliga säkerhetskopior och
-förbereder inloggning med sexsiffrig kod. Bocka av allt eftersom.
+**https://slira.app** via Cloudflare, gör koden privat, slår på dagliga
+säkerhetskopior och förbereder inloggning med sexsiffrig kod. Bocka av allt
+eftersom.
 
 Gör delarna i ordning. Appen fungerar som vanligt på den gamla adressen ända
 tills du flyttar dina enheter i del 6.
@@ -10,7 +11,7 @@ tills du flyttar dina enheter i del 6.
 | Del | Vad | Tid |
 |---|---|---|
 | 1 | GitHub Pro och privat repo | 5 min |
-| 2 | slira.app hos Loopia och GitHub | 15 min plus väntan |
+| 2 | slira.app via Cloudflare till GitHub | 20 min plus väntan |
 | 3 | sliraapp.com skickas vidare | 5 min |
 | 4 | Supabase Pro och säkerhetskopior | 5 min |
 | 5 | Resend: inloggningsmejl från slira.app | 20 min plus väntan |
@@ -43,71 +44,132 @@ fungerar fortfarande.
 
 ---
 
-## Del 2: slira.app hos Loopia och GitHub
+## Del 2: slira.app via Cloudflare till GitHub
 
-DNS ligger kvar hos Loopia. Du behöver alltså **inte** byta namnservrar.
+Domänerna är fortfarande registrerade hos Loopia, men Cloudflare sköter DNS
+och all trafik går via Cloudflare. Appen ligger kvar på GitHub Pages.
 
-### 2a. Verifiera domänen i GitHub
+> **Viktigt om ordningen.** Posterna för slira.app ska först stå som
+> **DNS only** (grått moln), så att GitHub kan utfärda sitt certifikat. Först
+> när *Enforce HTTPS* är påslaget i GitHub ändrar du till **Proxied** (orange
+> moln). Krypteringsläget i Cloudflare ska vara **Full (strict)**, aldrig
+> *Flexible*. Annars blir det en omdirigeringsloop.
+
+### 2a. Lägg till domänerna i Cloudflare
+
+- [ ] Logga in på **https://dash.cloudflare.com** och klicka **Add a domain**
+      (kan heta *Add site*). Skriv `slira.app` och välj planen **Free**, eller
+      en högre om du vill.
+- [ ] Cloudflare läser in befintliga DNS-poster från Loopia. **Ta bort alla**
+      poster som pekar på Loopias parkeringssida, även `*`.
+- [ ] Cloudflare visar **två namnservrar**, till exempel
+      `ada.ns.cloudflare.com` och `bob.ns.cloudflare.com`. Skriv upp dem.
+- [ ] Gör samma sak för `sliraapp.com`. Den kan få andra namnservrar, så skriv
+      upp dem separat.
+
+### 2b. Byt namnservrar hos Loopia
+
+- [ ] Logga in i **Loopia Kundzon** och klicka på domänen **slira.app**.
+- [ ] Om **DNSSEC** är påslaget: **stäng av det först**. Annars slutar
+      domänen att fungera under bytet.
+- [ ] Välj att ändra **namnservrar** och ange att domänen ska använda andra
+      namnservrar än Loopias. Fyll i Cloudflares två namnservrar och spara.
+- [ ] Gör samma sak för **sliraapp.com**, med dess namnservrar.
+- [ ] Vänta på Cloudflares mejl om att domänerna är aktiva. Det tar oftast
+      under en timme men kan ta upp till ett dygn. Du kan fortsätta med 2c
+      under tiden.
+
+### 2c. DNS-poster för slira.app (först grått moln)
+
+Gå till **slira.app → DNS → Records** i Cloudflare och lägg till posterna
+nedan. Klicka på molnet så att varje post står som **DNS only** (grått).
+
+| Typ | Namn | Innehåll |
+|---|---|---|
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+| AAAA | `@` | `2606:50c0:8000::153` |
+| AAAA | `@` | `2606:50c0:8001::153` |
+| AAAA | `@` | `2606:50c0:8002::153` |
+| AAAA | `@` | `2606:50c0:8003::153` |
+| CNAME | `www` | `pelleisaksson.github.io` |
+
+### 2d. Verifiera domänen i GitHub
 
 Verifieringen hindrar någon annan från att koppla din domän till sin sida.
 
 - [ ] På GitHub: klicka på din **profilbild** uppe till höger och välj
       **Settings**. Det ska vara kontots inställningar, inte repots.
-- [ ] Klicka **Pages** i vänstermenyn och sedan **Add a domain**.
-- [ ] Skriv `slira.app` och klicka **Add domain**.
-- [ ] GitHub visar en TXT-post med ett namn som börjar på
-      `_github-pages-challenge-pelleisaksson` och ett långt värde. Låt sidan
-      vara öppen.
+- [ ] Klicka **Pages** i vänstermenyn och sedan **Add a domain**. Skriv
+      `slira.app` och klicka **Add domain**.
+- [ ] GitHub visar en **TXT**-post. Lägg in den i Cloudflare under
+      **slira.app → DNS → Records**: typ **TXT**, med det namn och innehåll
+      som GitHub visar.
+- [ ] Klicka **Verify** i GitHub. Om det inte går direkt, vänta en stund och
+      försök igen.
 
-### 2b. Lägg in posterna hos Loopia
+### 2e. Koppla domänen till appen
 
-- [ ] Logga in i **Loopia Kundzon** och klicka på domänen **slira.app**.
-- [ ] Öppna **DNS-inställningarna** (DNS-editorn) för domänen.
-- [ ] **Ta bort** de A-, AAAA- och CNAME-poster som Loopia har lagt in för
-      `@`, `www` och `*`. De pekar på Loopias parkeringssida.
-- [ ] Lägg till **TXT-posten från GitHub** (2a). Använd namnet som underdomän
-      (`_github-pages-challenge-pelleisaksson`) och klistra in värdet.
-- [ ] Under underdomänen **@**, lägg till fyra **A**-poster:
-      `185.199.108.153`, `185.199.109.153`, `185.199.110.153` och
-      `185.199.111.153`.
-- [ ] Under **@**, lägg till fyra **AAAA**-poster:
-      `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`
-      och `2606:50c0:8003::153`.
-- [ ] Skapa underdomänen **www** med en **CNAME**-post till
-      `pelleisaksson.github.io`.
-
-### 2c. Koppla domänen till appen
-
-- [ ] Tillbaka på GitHub (2a): klicka **Verify**. Om det inte går direkt,
-      vänta en stund och försök igen. Det kan ta upp till några timmar.
 - [ ] Gå till repot och **Settings → Pages**. Under **Custom domain**, skriv
       `slira.app` och klicka **Save**.
 - [ ] Vänta tills det står **DNS check successful**.
 - [ ] Kryssa i **Enforce HTTPS** när rutan blir klickbar. Det kan ta upp till
       en timme.
 
-> Adresser som slutar på **.app** fungerar bara med https. Sidan visar därför
-> ett fel tills GitHub har utfärdat certifikatet, även om allt annat är rätt.
-> Det är normalt.
+*Kontroll:* **https://slira.app** visar Slira.
 
-*Kontroll:* **https://slira.app** visar Slira, och den gamla github.io-adressen
-skickar vidare dit.
+### 2f. Skicka trafiken via Cloudflare (orange moln)
+
+Gör det här först när *Enforce HTTPS* är ikryssat i 2e.
+
+- [ ] I Cloudflare: gå till **slira.app → SSL/TLS → Overview** och välj
+      **Full (strict)**.
+- [ ] Gå till **SSL/TLS → Edge Certificates** och slå på
+      **Always Use HTTPS**.
+- [ ] Gå till **DNS → Records** och klicka på molnet för alla A-, AAAA- och
+      CNAME-poster för `@` och `www`, så att de blir **Proxied** (orange).
+      TXT-posterna påverkas inte.
+- [ ] Låt Cloudflares standardinställningar för cache vara som de är. Slå
+      **inte** på *Rocket Loader* eller en regel som cachar allt (*Cache
+      Everything*), eftersom appen själv håller koll på nya versioner.
+
+*Kontroll:* **https://slira.app** visar fortfarande Slira, och i webbläsarens
+adressfält syns ett giltigt certifikat. Den gamla github.io-adressen skickar
+vidare till slira.app.
+
+> GitHub förnyar sitt certifikat ungefär var tredje månad. Om GitHub någon
+> gång visar en varning om DNS under **Settings → Pages** är det för att
+> trafiken går via Cloudflare. Appen fungerar ändå. Om certifikatet skulle
+> sluta förnyas: ändra tillfälligt molnen till grått, vänta tills GitHub har
+> förnyat certifikatet och ändra sedan tillbaka till orange.
 
 ---
 
 ## Del 3: sliraapp.com skickas vidare till slira.app
 
-- [ ] I Loopia Kundzon: klicka på **sliraapp.com** och leta upp
-      **omdirigering**, *vidarebefordring* eller *webbomdirigering*.
-- [ ] Ställ in att domänen ska skickas vidare till `https://slira.app`. Välj
-      **permanent (301)** om du får välja, och gör samma sak för
-      **www.sliraapp.com** om den räknas separat.
+Cloudflare sköter vidarebefordringen själv, utan någon server.
 
-*Kontroll:* **http://sliraapp.com** hamnar på slira.app.
+- [ ] Gå till **sliraapp.com → DNS → Records** i Cloudflare och lägg till två
+      poster som **Proxied** (orange):
+  - Typ **A**, namn `@`, innehåll `192.0.2.1`
+  - Typ **A**, namn `www`, innehåll `192.0.2.1`
 
-> Om **https**://sliraapp.com visar en varning om certifikat stödjer Loopias
-> omdirigering bara http. Säg till i så fall, så flyttar vi just den domänen
-> till Cloudflare, som klarar båda.
+  `192.0.2.1` är en platshållare som aldrig används. Cloudflare svarar själv
+  med vidarebefordringen.
+- [ ] Gå till **sliraapp.com → Rules → Redirect Rules** och klicka
+      **Create rule**.
+- [ ] Ge regeln ett namn, till exempel *Till slira.app*.
+- [ ] Under villkoret: välj **Custom filter expression**, och ange att
+      **Hostname** ska vara **is in** `sliraapp.com` och `www.sliraapp.com`.
+- [ ] Under åtgärden: välj **Dynamic** och skriv uttrycket
+      `concat("https://slira.app", http.request.uri.path)`.
+- [ ] Välj statuskod **301**, kryssa i **Preserve query string** och klicka
+      **Deploy**.
+
+*Kontroll:* både **http://sliraapp.com** och **https://www.sliraapp.com**
+hamnar på slira.app.
 
 ---
 
@@ -136,8 +198,9 @@ med i mejlet och mejl skickas till vem som helst, från `inloggning@slira.app`.
 - [ ] Resend visar några DNS-poster: en **MX** och en **TXT** för
       underdomänen `send`, en **TXT** för `resend._domainkey` och eventuellt
       en **TXT** för `_dmarc`.
-- [ ] Lägg in exakt de posterna hos Loopia, i DNS-inställningarna för
-      **slira.app**, med namn och värden som Resend visar.
+- [ ] Lägg in exakt de posterna i Cloudflare under **slira.app → DNS →
+      Records**, med namn och värden som Resend visar. MX- och TXT-poster kan
+      inte gå via Cloudflare och står automatiskt som **DNS only**.
 - [ ] Klicka **Verify DNS Records** i Resend. Vänta tills domänen står som
       **Verified**. Det tar från några minuter till några timmar.
 
@@ -218,10 +281,13 @@ under **Redirect URLs** i Supabase.
 | Problem | Lösning |
 |---|---|
 | Change visibility går inte att välja | Del 1: kontrollera att GitHub Pro är aktivt under Billing. |
-| GitHub säger att domänen inte går att verifiera | Kontrollera TXT-posten hos Loopia: namn och värde exakt som GitHub visar. Vänta en stund och försök igen. |
-| DNS check misslyckas | Kontrollera att A- och AAAA-posterna finns under @ och att Loopias parkeringsposter är borttagna, även `*`. |
-| slira.app visar ett fel om säker anslutning | Certifikatet är inte klart än. Vänta upp till en timme och kryssa sedan i **Enforce HTTPS**. |
-| Resend verifierar inte domänen | Jämför posterna hos Loopia med Resends lista tecken för tecken. Vissa DNS-editorer lägger till domännamnet själva, så skriv bara `send`, inte `send.slira.app`. |
+| Cloudflare säger att domänen inte är aktiv | Namnservrarna hos Loopia är inte bytta än, eller så är DNSSEC fortfarande påslaget hos Loopia. |
+| GitHub säger att domänen inte går att verifiera | Kontrollera TXT-posten i Cloudflare: namn och innehåll exakt som GitHub visar. Vänta en stund och försök igen. |
+| DNS check misslyckas eller Enforce HTTPS går inte att kryssa i | Posterna för slira.app måste stå som **DNS only** (grått) tills Enforce HTTPS är på. Kontrollera också att Loopias parkeringsposter är borttagna. |
+| slira.app visar ett fel om säker anslutning | Certifikatet är inte klart än. Vänta upp till en timme. |
+| "Too many redirects" | Krypteringsläget i Cloudflare är *Flexible*. Ändra till **Full (strict)** under SSL/TLS. |
+| Appen visar en gammal version efter en uppdatering | Gå till **Caching → Configuration** i Cloudflare och klicka **Purge Everything**. |
+| Resend verifierar inte domänen | Jämför posterna i Cloudflare med Resends lista tecken för tecken. Cloudflare lägger till domännamnet själv, så skriv bara `send`, inte `send.slira.app`. |
 | Inget inloggningsmejl kommer | Titta i skräpposten. Kontrollera SMTP-uppgifterna i Supabase och att domänen är verifierad i Resend. Under **Logs** i Resend syns varje mejl. |
 | Mejlet saknar kod | Mallen i 5d är inte sparad. Kontrollera både *Magic Link* och *Confirm signup*. |
 | "Synk är inte aktiverad" | Variablerna under GitHub **Settings → Secrets and variables → Actions → Variables** saknas. De ska finnas kvar efter att repot gjorts privat. |
